@@ -54,6 +54,7 @@ type TaskRow = {
 };
 
 const STORAGE_KEY = "local-first-todo.tasks";
+const THEME_STORAGE_KEY = "local-first-todo.theme";
 const BACKUP_VERSION = 1;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -158,6 +159,10 @@ function loadTasks(): Task[] {
 
 function saveTasks(tasks: Task[]) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function loadDarkMode() {
+  return window.localStorage.getItem(THEME_STORAGE_KEY) === "dark";
 }
 
 function parseLocalDate(value: string) {
@@ -341,6 +346,7 @@ export function App() {
   const [syncMessage, setSyncMessage] = useState("Local mode");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => loadDarkMode());
   const loadingCloudRef = useRef(false);
 
   useEffect(() => {
@@ -363,6 +369,17 @@ export function App() {
     saveTasks(tasks);
     setLastSavedAt(new Date().toISOString());
   }, [tasks]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = isDarkMode ? "dark" : "light";
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", isDarkMode ? "#10141c" : "#f6f7f9");
+    window.localStorage.setItem(
+      THEME_STORAGE_KEY,
+      isDarkMode ? "dark" : "light",
+    );
+  }, [isDarkMode]);
 
   useEffect(() => {
     if (!user) {
@@ -951,6 +968,18 @@ export function App() {
                 Close
               </button>
             </div>
+
+            <section className="menu-section">
+              <h3>Appearance</h3>
+              <label className="toggle-row">
+                <span>Dark mode</span>
+                <input
+                  type="checkbox"
+                  checked={isDarkMode}
+                  onChange={(event) => setIsDarkMode(event.target.checked)}
+                />
+              </label>
+            </section>
 
             <section className="menu-section" aria-labelledby="account">
               <h3 id="account">Account Sync</h3>
