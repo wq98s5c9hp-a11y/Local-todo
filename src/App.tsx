@@ -337,6 +337,7 @@ export function App() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authMessage, setAuthMessage] = useState("");
+  const [authSubmitting, setAuthSubmitting] = useState(false);
   const [syncMessage, setSyncMessage] = useState("Local mode");
   const loadingCloudRef = useRef(false);
 
@@ -471,30 +472,65 @@ export function App() {
     syncCloudTasks(nextTasks);
   }
 
+  function validateAuthFields() {
+    const email = authEmail.trim();
+
+    if (!email || !authPassword) {
+      setAuthMessage("Enter an email and password first.");
+      return null;
+    }
+
+    if (authPassword.length < 6) {
+      setAuthMessage("Password must be at least 6 characters.");
+      return null;
+    }
+
+    return { email, password: authPassword };
+  }
+
   async function handleCreateAccount() {
+    const credentials = validateAuthFields();
+
+    if (!credentials) {
+      return;
+    }
+
     setAuthMessage("Creating account...");
+    setAuthSubmitting(true);
 
     const { error } = await supabase.auth.signUp({
-      email: authEmail,
-      password: authPassword,
+      email: credentials.email,
+      password: credentials.password,
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
     });
 
+    setAuthSubmitting(false);
     setAuthMessage(
       error
         ? error.message
-        : "Account created. Check your email if Supabase asks for confirmation.",
+        : "Account created. Check your email if Supabase asks for confirmation, then return here and sign in.",
     );
   }
 
   async function handleSignIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const credentials = validateAuthFields();
+
+    if (!credentials) {
+      return;
+    }
+
     setAuthMessage("Signing in...");
+    setAuthSubmitting(true);
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: authEmail,
-      password: authPassword,
+      email: credentials.email,
+      password: credentials.password,
     });
 
+    setAuthSubmitting(false);
     setAuthMessage(error ? error.message : "Signed in.");
   }
 
@@ -917,8 +953,14 @@ export function App() {
               required
               minLength={6}
             />
-            <button type="submit">Sign in</button>
-            <button type="button" onClick={handleCreateAccount}>
+            <button type="submit" disabled={authSubmitting}>
+              Sign in
+            </button>
+            <button
+              type="button"
+              disabled={authSubmitting}
+              onClick={handleCreateAccount}
+            >
               Create account
             </button>
           </form>
