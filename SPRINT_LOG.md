@@ -228,3 +228,32 @@
 ### Sprint 6 Manual Setup
 
 - Run `SUPABASE_REPEAT_MIGRATION.sql` in the Supabase dashboard SQL editor before using repeat tasks with account sync.
+
+### Sprint 7 Approval
+
+- CEO requested a logo with cyan, magenta, and black stripes forming a bent check-like angle.
+- CEO requested manual move up/down controls on the side of list items.
+- CEO requested smaller controls and a more compact task list.
+- CEO requested square list items.
+- CEO requested the top four active tasks to be highlighted.
+- CEO requested `Add task` to live at the top of the list in the same task-box format.
+
+### Sprint 7 Implementation Changes
+
+- Replaced the app icon with a striped check-style mark.
+- Added manual move up/down controls to active tasks.
+- Added `sortOrder` to tasks so manual ordering can be preserved and synced.
+- Added `SUPABASE_SORT_ORDER_MIGRATION.sql` for the existing Supabase table.
+- Made task cards square-cornered and more compact.
+- Changed task row actions to compact icon-style buttons.
+- Highlighted the top four active tasks with a warmer task-card background.
+- Moved the add-task trigger into the Active Tasks section as a task-shaped row.
+
+### Sprint 7 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.
+
+### Sprint 7 Manual Setup
+
+- Run `SUPABASE_SORT_ORDER_MIGRATION.sql` in the Supabase dashboard SQL editor before using the deployed manual ordering feature with account sync.

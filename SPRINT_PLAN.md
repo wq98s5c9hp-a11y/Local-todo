@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 6 executed
+Status: Sprint 7 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -118,3 +118,17 @@ Goal: Add the CEO-requested yearly repeat option while keeping repeat behavior s
 - Kept the completed copy in the archive.
 - Added Supabase schema and migration support for repeat values.
 - Changed the main `Add task` button to a magenta accent.
+
+## Sprint 7: Compact Task List Controls
+
+Goal: Make the main list more compact, more visual, and more directly controllable.
+
+## Completed Scope
+
+- Updated the logo to a cyan, magenta, and black striped check shape.
+- Added manual move up/down controls to active tasks.
+- Added synced task ordering support.
+- Made task action controls smaller.
+- Changed task list items to square cards.
+- Highlighted the top four active tasks.
+- Moved the add-task entry point into the active task list.

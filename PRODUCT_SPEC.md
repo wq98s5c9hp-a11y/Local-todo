@@ -90,6 +90,8 @@ Current implementation uses an importance field with one of three levels:
 
 Active tasks are sorted by a simple balance of due-date urgency and importance.
 
+The user can manually move active tasks up or down. Once the user manually adjusts the list, that explicit order is preserved and synced.
+
 ### Add Due Date And Urgency Threshold
 
 Each task can include a due date and a threshold for when it should become urgent.
@@ -163,6 +165,7 @@ As of Product Director Mode setup, the app already has a small Vite, React, and 
 - Urgent-before field
 - Details field
 - Repeat option with none, daily, weekly, monthly, and yearly choices
+- Manual move up/down ordering for active tasks
 - Active task sorting by urgency and importance
 - JSON export backup
 - JSON import backup
@@ -216,6 +219,7 @@ type Task = {
   estimatedDuration: string;
   dueDate: string;
   urgentBeforeDays: number;
+  sortOrder: number | null;
   repeat: TaskRepeat;
   details: string;
   completed: boolean;

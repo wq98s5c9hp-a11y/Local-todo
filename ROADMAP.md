@@ -199,6 +199,21 @@ Expected outcome:
 - The app can be added to an iPhone home screen.
 - The top task list stays more visible on small screens.
 
+## Stage 14: Compact Task List Controls
+
+Status: Complete
+
+Make the main task list feel more like a compact working notepad.
+
+Completed features:
+
+- Updated the app logo with cyan, magenta, and black check-stripe artwork.
+- Added manual move up/down controls for active tasks.
+- Made task action controls smaller and more compact.
+- Changed list items to square cards.
+- Highlighted the top four active tasks.
+- Moved `Add task` into the active list as a task-shaped box.
+
 ## Later Ideas
 
 These are intentionally outside version 1:

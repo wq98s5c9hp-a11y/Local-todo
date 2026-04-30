@@ -19,6 +19,7 @@ type Task = {
   estimatedDuration: string;
   dueDate: string;
   urgentBeforeDays: number;
+  sortOrder: number | null;
   details: string;
   repeat: TaskRepeat;
   completed: boolean;
@@ -49,6 +50,7 @@ type TaskRow = {
   estimated_duration: string;
   due_date: string | null;
   urgent_before_days: number;
+  sort_order: number | null;
   details: string;
   repeat: TaskRepeat;
   completed: boolean;
@@ -108,6 +110,19 @@ function normalizeUrgentBeforeDays(value: unknown) {
   return Math.round(value);
 }
 
+function normalizeSortOrder(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsedValue = Number(value);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
+
+  return null;
+}
+
 function normalizeTask(value: unknown): Task | null {
   if (!value || typeof value !== "object") {
     return null;
@@ -139,6 +154,7 @@ function normalizeTask(value: unknown): Task | null {
       typeof task.estimatedDuration === "string" ? task.estimatedDuration : "",
     dueDate: typeof task.dueDate === "string" ? task.dueDate : "",
     urgentBeforeDays: normalizeUrgentBeforeDays(task.urgentBeforeDays),
+    sortOrder: normalizeSortOrder(task.sortOrder),
     details: typeof task.details === "string" ? task.details : "",
     repeat: isTaskRepeat(task.repeat) ? task.repeat : "none",
     completed: task.completed,
@@ -286,6 +302,7 @@ function createTaskFromDraft(draft: TaskDraft): Task {
     estimatedDuration: draft.estimatedDuration.trim(),
     dueDate: draft.dueDate,
     urgentBeforeDays: draft.urgentBeforeDays,
+    sortOrder: Date.now() * -1,
     details: draft.details.trim(),
     repeat: draft.repeat,
     completed: false,
@@ -353,6 +370,7 @@ function createNextRepeatingTask(task: Task, completedAt: string): Task | null {
     completed: false,
     completedAt: undefined,
     dueDate: formatDateInputValue(nextDueDate),
+    sortOrder: Date.now() * -1,
     createdAt: completedAt,
     updatedAt: completedAt,
   };
@@ -367,6 +385,7 @@ function toTaskRow(task: Task, userId: string): TaskRow {
     estimated_duration: task.estimatedDuration,
     due_date: task.dueDate || null,
     urgent_before_days: task.urgentBeforeDays,
+    sort_order: task.sortOrder,
     details: task.details,
     repeat: task.repeat,
     completed: task.completed,
@@ -384,6 +403,7 @@ function fromTaskRow(row: TaskRow): Task {
     estimatedDuration: row.estimated_duration,
     dueDate: row.due_date || "",
     urgentBeforeDays: row.urgent_before_days,
+    sortOrder: normalizeSortOrder(row.sort_order),
     details: row.details,
     repeat: isTaskRepeat(row.repeat) ? row.repeat : "none",
     completed: row.completed,
@@ -480,6 +500,22 @@ export function App() {
       tasks
         .filter((task) => !task.completed)
         .sort((firstTask, secondTask) => {
+          if (
+            firstTask.sortOrder !== null &&
+            secondTask.sortOrder !== null &&
+            firstTask.sortOrder !== secondTask.sortOrder
+          ) {
+            return firstTask.sortOrder - secondTask.sortOrder;
+          }
+
+          if (firstTask.sortOrder !== null && secondTask.sortOrder === null) {
+            return -1;
+          }
+
+          if (firstTask.sortOrder === null && secondTask.sortOrder !== null) {
+            return 1;
+          }
+
           const scoreDifference = getTaskScore(secondTask) - getTaskScore(firstTask);
 
           if (scoreDifference !== 0) {
@@ -501,6 +537,22 @@ export function App() {
 
   const visibleNowTasks = activeTasks.slice(0, 4);
   const laterActiveTasks = activeTasks.slice(4);
+
+  function normalizeActiveOrder(orderedActiveTasks: Task[]) {
+    const orderById = new Map(
+      orderedActiveTasks.map((task, index) => [task.id, index + 1]),
+    );
+
+    return tasks.map((task) =>
+      orderById.has(task.id)
+        ? {
+            ...task,
+            sortOrder: orderById.get(task.id) ?? task.sortOrder,
+            updatedAt: new Date().toISOString(),
+          }
+        : task,
+    );
+  }
 
   async function syncCloudTasks(nextTasks: Task[], currentUser = user) {
     if (!currentUser || loadingCloudRef.current) {
@@ -749,11 +801,34 @@ export function App() {
               ...task,
               completed: false,
               completedAt: undefined,
+              sortOrder: Date.now() * -1,
               updatedAt: now,
             }
           : task,
       ),
     );
+  }
+
+  function moveActiveTask(taskId: string, direction: "up" | "down") {
+    const currentIndex = activeTasks.findIndex((task) => task.id === taskId);
+
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (nextIndex < 0 || nextIndex >= activeTasks.length) {
+      return;
+    }
+
+    const reorderedTasks = [...activeTasks];
+    [reorderedTasks[currentIndex], reorderedTasks[nextIndex]] = [
+      reorderedTasks[nextIndex],
+      reorderedTasks[currentIndex],
+    ];
+
+    persistTasks(normalizeActiveOrder(reorderedTasks));
   }
 
   function toggleTaskDetails(taskId: string) {
@@ -821,16 +896,38 @@ export function App() {
     reader.readAsText(file);
   }
 
-  function renderTask(task: Task, isFeatured = false) {
+  function renderTask(task: Task, isFeatured = false, activeIndex: number | null = null) {
     const isEditing = editingTaskId === task.id;
     const isExpanded = expandedTaskIds.has(task.id);
     const urgencyLabel = getUrgencyLabel(task);
+    const canMoveUp = activeIndex !== null && activeIndex > 0;
+    const canMoveDown = activeIndex !== null && activeIndex < activeTasks.length - 1;
 
     return (
       <li
         className={isFeatured ? "task task-featured" : "task"}
         key={task.id}
       >
+        {activeIndex !== null ? (
+          <div className="task-move-actions" aria-label="Move task">
+            <button
+              type="button"
+              aria-label="Move task up"
+              disabled={!canMoveUp}
+              onClick={() => moveActiveTask(task.id, "up")}
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              aria-label="Move task down"
+              disabled={!canMoveDown}
+              onClick={() => moveActiveTask(task.id, "down")}
+            >
+              ↓
+            </button>
+          </div>
+        ) : null}
         {isEditing ? (
           <form
             className="task-edit-form"
@@ -1009,26 +1106,52 @@ export function App() {
 
             <div className="task-actions">
               {!task.completed ? (
-                <button type="button" onClick={() => completeTask(task.id)}>
-                  Complete
+                <button
+                  className="task-icon-action complete-action"
+                  type="button"
+                  aria-label="Complete task"
+                  title="Complete"
+                  onClick={() => completeTask(task.id)}
+                >
+                  ✓
                 </button>
               ) : (
-                <button type="button" onClick={() => restoreTask(task.id)}>
-                  Restore
+                <button
+                  className="task-icon-action"
+                  type="button"
+                  aria-label="Restore task"
+                  title="Restore"
+                  onClick={() => restoreTask(task.id)}
+                >
+                  ↩
                 </button>
               )}
-              <button type="button" onClick={() => toggleTaskDetails(task.id)}>
-                {isExpanded ? "Hide" : "Details"}
-              </button>
-              <button type="button" onClick={() => startEditing(task)}>
-                Edit
+              <button
+                className="task-icon-action"
+                type="button"
+                aria-label={isExpanded ? "Hide details" : "Show details"}
+                title={isExpanded ? "Hide details" : "Details"}
+                onClick={() => toggleTaskDetails(task.id)}
+              >
+                i
               </button>
               <button
-                className="danger"
+                className="task-icon-action"
                 type="button"
+                aria-label="Edit task"
+                title="Edit"
+                onClick={() => startEditing(task)}
+              >
+                ✎
+              </button>
+              <button
+                className="task-icon-action danger"
+                type="button"
+                aria-label="Delete task"
+                title="Delete"
                 onClick={() => deleteTask(task.id)}
               >
-                Delete
+                ×
               </button>
             </div>
           </>
@@ -1040,11 +1163,14 @@ export function App() {
   return (
     <main className="app-shell">
       <header className="app-header">
-        <div>
+        <div className="brand-block">
+          <img className="app-logo" src="/icon.svg" alt="" aria-hidden="true" />
+          <div>
           <h1>Todo</h1>
           <p className="save-status">
             {user ? "Synced account" : "Local mode"}
           </p>
+          </div>
         </div>
         <button
           className="icon-button"
@@ -1161,16 +1287,11 @@ export function App() {
 
       {importMessage ? <p className="import-message">{importMessage}</p> : null}
 
-      <button
-        className="add-task-trigger"
-        type="button"
-        onClick={() => setIsAddTaskOpen(true)}
-      >
-        Add task
-      </button>
+      <section aria-labelledby="active-tasks">
+        <h2 id="active-tasks">Active Tasks</h2>
 
-      {isAddTaskOpen ? (
-        <section className="add-panel" aria-labelledby="add-task">
+        {isAddTaskOpen ? (
+        <section className="task add-panel" aria-labelledby="add-task">
           <div className="panel-header">
             <h2 id="add-task">Add Task</h2>
             <button type="button" onClick={closeAddTask}>
@@ -1285,20 +1406,29 @@ export function App() {
             <button type="submit">Add</button>
           </form>
         </section>
-      ) : null}
+        ) : (
+          <button
+            className="task add-task-trigger"
+            type="button"
+            onClick={() => setIsAddTaskOpen(true)}
+          >
+            <span className="add-plus">+</span>
+            <span>Add task</span>
+          </button>
+        )}
 
-      <section aria-labelledby="active-tasks">
-        <h2 id="active-tasks">Active Tasks</h2>
         {activeTasks.length ? (
           <>
             <ul className="task-list top-task-list">
-              {visibleNowTasks.map((task) => renderTask(task, true))}
+              {visibleNowTasks.map((task, index) => renderTask(task, true, index))}
             </ul>
             {laterActiveTasks.length ? (
               <>
                 <h3>Later</h3>
                 <ul className="task-list">
-                  {laterActiveTasks.map((task) => renderTask(task))}
+                  {laterActiveTasks.map((task, index) =>
+                    renderTask(task, false, index + visibleNowTasks.length),
+                  )}
                 </ul>
               </>
             ) : null}
