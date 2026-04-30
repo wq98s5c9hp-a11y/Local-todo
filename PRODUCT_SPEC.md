@@ -44,6 +44,7 @@ The user can create a new task with:
 - Estimated duration
 - Due date
 - Urgent-before threshold
+- Repeat option
 - Optional details
 
 The title is required. Other fields should be easy to set but should not make capture feel slow.
@@ -59,6 +60,7 @@ The user can update an existing task's:
 - Estimated duration
 - Due date
 - Urgent-before threshold
+- Repeat option
 - Details
 - Completion state
 
@@ -121,9 +123,9 @@ The app should visually separate:
 
 Completed tasks act as a simple archive.
 
-CEO direction: completed tasks should move to an archive, remain available for reference, and eventually be restorable to the main active list.
+CEO direction: completed tasks should move to an archive, remain available for reference, and be restorable to the main active list.
 
-Potential later behavior: repeat options for tasks, including repeat duration. This should be handled carefully because it can add complexity to the main input.
+Repeating tasks can be set to daily, weekly, monthly, or yearly. When a repeating task is completed, the completed copy moves to the archive and a new active copy is created for the next repeat date.
 
 ### Local Browser Storage
 
@@ -160,6 +162,7 @@ As of Product Director Mode setup, the app already has a small Vite, React, and 
 - Due date field
 - Urgent-before field
 - Details field
+- Repeat option with none, daily, weekly, monthly, and yearly choices
 - Active task sorting by urgency and importance
 - JSON export backup
 - JSON import backup
@@ -182,8 +185,6 @@ Future work should refine this product deliberately rather than expand scope by 
 - Team/multi-user collaboration
 - Due-date automation beyond local sorting/status labels
 - Reminders
-- Recurring tasks
-- Repeat scheduling
 - Calendar integration
 - Email integration
 - Messaging integration
@@ -194,7 +195,6 @@ Future work should refine this product deliberately rather than expand scope by 
 
 These fields are requested or under consideration, but should be introduced in controlled increments:
 
-- Repeat option
 - Repeat duration
 - Tags
 - Projects
@@ -207,6 +207,7 @@ Product decision: `description` and `important info` are currently combined into
 
 ```ts
 type TaskImportance = "low" | "medium" | "high";
+type TaskRepeat = "none" | "daily" | "weekly" | "monthly" | "yearly";
 
 type Task = {
   id: string;
@@ -215,6 +216,7 @@ type Task = {
   estimatedDuration: string;
   dueDate: string;
   urgentBeforeDays: number;
+  repeat: TaskRepeat;
   details: string;
   completed: boolean;
   createdAt: string;

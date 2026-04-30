@@ -129,15 +129,15 @@ Expected outcome:
 
 ## Stage 9: Completed Archive Improvements
 
-Status: In progress
+Status: Complete
 
 Improve completed-task behavior.
 
-Candidate features:
+Completed features:
 
 - Restore completed task to active list.
 - Keep archive readable.
-- Add repeat behavior only if it stays simple.
+- Add simple repeat behavior for daily, weekly, monthly, and yearly tasks.
 
 ## Stage 10: Local Backup
 
@@ -209,7 +209,6 @@ These are intentionally outside version 1:
 - Filtering
 - AI-assisted planning
 - Keyboard shortcuts
-- Recurring tasks
 - Reminders
 - TV-specific display mode
 - Desktop always-on packaging

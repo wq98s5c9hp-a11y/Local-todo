@@ -9,6 +9,8 @@
   --border-strong: #aeb6a5;
   --primary: #0098b8;
   --primary-text: #ffffff;
+  --magenta: #d1008f;
+  --magenta-text: #ffffff;
   --good: #118a45;
   --good-bg: #dff5e8;
   --warn: #f0c400;
@@ -40,6 +42,8 @@ html[data-theme="dark"] {
   --border-strong: #56624f;
   --primary: #00bcd4;
   --primary-text: #031315;
+  --magenta: #ff4fc3;
+  --magenta-text: #1a0713;
   --good: #55d485;
   --good-bg: #143323;
   --warn: #ffd84a;
@@ -253,9 +257,10 @@ h3 {
 .add-task-trigger {
   width: 100%;
   margin-bottom: 1rem;
-  background: var(--primary);
-  border-color: var(--primary);
-  color: var(--primary-text);
+  background: var(--magenta);
+  border-color: var(--magenta);
+  color: var(--magenta-text);
+  font-weight: 700;
 }
 
 .add-panel {

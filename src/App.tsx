@@ -10,6 +10,7 @@ import { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 
 type TaskImportance = "low" | "medium" | "high";
+type TaskRepeat = "none" | "daily" | "weekly" | "monthly" | "yearly";
 
 type Task = {
   id: string;
@@ -19,6 +20,7 @@ type Task = {
   dueDate: string;
   urgentBeforeDays: number;
   details: string;
+  repeat: TaskRepeat;
   completed: boolean;
   createdAt: string;
   updatedAt: string;
@@ -32,6 +34,7 @@ type TaskDraft = {
   dueDate: string;
   urgentBeforeDays: number;
   details: string;
+  repeat: TaskRepeat;
 };
 
 type StoredTask = Partial<Task> & {
@@ -47,6 +50,7 @@ type TaskRow = {
   due_date: string | null;
   urgent_before_days: number;
   details: string;
+  repeat: TaskRepeat;
   completed: boolean;
   created_at: string;
   updated_at: string;
@@ -65,6 +69,7 @@ const emptyDraft: TaskDraft = {
   dueDate: "",
   urgentBeforeDays: 1,
   details: "",
+  repeat: "none",
 };
 
 const importanceWeight: Record<TaskImportance, number> = {
@@ -83,6 +88,16 @@ function createId() {
 
 function isTaskImportance(value: unknown): value is TaskImportance {
   return value === "low" || value === "medium" || value === "high";
+}
+
+function isTaskRepeat(value: unknown): value is TaskRepeat {
+  return (
+    value === "none" ||
+    value === "daily" ||
+    value === "weekly" ||
+    value === "monthly" ||
+    value === "yearly"
+  );
 }
 
 function normalizeUrgentBeforeDays(value: unknown) {
@@ -125,6 +140,7 @@ function normalizeTask(value: unknown): Task | null {
     dueDate: typeof task.dueDate === "string" ? task.dueDate : "",
     urgentBeforeDays: normalizeUrgentBeforeDays(task.urgentBeforeDays),
     details: typeof task.details === "string" ? task.details : "",
+    repeat: isTaskRepeat(task.repeat) ? task.repeat : "none",
     completed: task.completed,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
@@ -271,9 +287,74 @@ function createTaskFromDraft(draft: TaskDraft): Task {
     dueDate: draft.dueDate,
     urgentBeforeDays: draft.urgentBeforeDays,
     details: draft.details.trim(),
+    repeat: draft.repeat,
     completed: false,
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+function formatRepeat(value: TaskRepeat) {
+  switch (value) {
+    case "daily":
+      return "Daily";
+    case "weekly":
+      return "Weekly";
+    case "monthly":
+      return "Monthly";
+    case "yearly":
+      return "Yearly";
+    default:
+      return "";
+  }
+}
+
+function addRepeatInterval(date: Date, repeat: TaskRepeat) {
+  const nextDate = new Date(date);
+
+  if (repeat === "daily") {
+    nextDate.setDate(nextDate.getDate() + 1);
+  }
+
+  if (repeat === "weekly") {
+    nextDate.setDate(nextDate.getDate() + 7);
+  }
+
+  if (repeat === "monthly") {
+    nextDate.setMonth(nextDate.getMonth() + 1);
+  }
+
+  if (repeat === "yearly") {
+    nextDate.setFullYear(nextDate.getFullYear() + 1);
+  }
+
+  return nextDate;
+}
+
+function formatDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function createNextRepeatingTask(task: Task, completedAt: string): Task | null {
+  if (task.repeat === "none") {
+    return null;
+  }
+
+  const dueDate = parseLocalDate(task.dueDate) ?? new Date(completedAt);
+  const nextDueDate = addRepeatInterval(dueDate, task.repeat);
+
+  return {
+    ...task,
+    id: createId(),
+    completed: false,
+    completedAt: undefined,
+    dueDate: formatDateInputValue(nextDueDate),
+    createdAt: completedAt,
+    updatedAt: completedAt,
   };
 }
 
@@ -287,6 +368,7 @@ function toTaskRow(task: Task, userId: string): TaskRow {
     due_date: task.dueDate || null,
     urgent_before_days: task.urgentBeforeDays,
     details: task.details,
+    repeat: task.repeat,
     completed: task.completed,
     created_at: task.createdAt,
     updated_at: task.updatedAt,
@@ -303,6 +385,7 @@ function fromTaskRow(row: TaskRow): Task {
     dueDate: row.due_date || "",
     urgentBeforeDays: row.urgent_before_days,
     details: row.details,
+    repeat: isTaskRepeat(row.repeat) ? row.repeat : "none",
     completed: row.completed,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -585,6 +668,7 @@ export function App() {
       dueDate: task.dueDate,
       urgentBeforeDays: task.urgentBeforeDays,
       details: task.details,
+      repeat: task.repeat,
     });
   }
 
@@ -611,6 +695,7 @@ export function App() {
               dueDate: editingDraft.dueDate,
               urgentBeforeDays: editingDraft.urgentBeforeDays,
               details: editingDraft.details.trim(),
+              repeat: editingDraft.repeat,
               updatedAt: new Date().toISOString(),
             }
           : task,
@@ -629,18 +714,24 @@ export function App() {
 
   function completeTask(taskId: string) {
     const now = new Date().toISOString();
+    const taskToComplete = tasks.find((task) => task.id === taskId);
+    const nextRepeatingTask = taskToComplete
+      ? createNextRepeatingTask(taskToComplete, now)
+      : null;
+
+    const completedTasks = tasks.map((task) =>
+      task.id === taskId
+        ? {
+            ...task,
+            completed: true,
+            completedAt: now,
+            updatedAt: now,
+          }
+        : task,
+    );
 
     persistTasks(
-      tasks.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              completed: true,
-              completedAt: now,
-              updatedAt: now,
-            }
-          : task,
-      ),
+      nextRepeatingTask ? [nextRepeatingTask, ...completedTasks] : completedTasks,
     );
 
     if (editingTaskId === taskId) {
@@ -826,6 +917,25 @@ export function App() {
               </select>
             </label>
 
+            <label>
+              <span>Repeat</span>
+              <select
+                value={editingDraft.repeat}
+                onChange={(event) =>
+                  setEditingDraft({
+                    ...editingDraft,
+                    repeat: event.target.value as TaskRepeat,
+                  })
+                }
+              >
+                <option value="none">No repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </label>
+
             <label className="full-field">
               <span>Details</span>
               <textarea
@@ -872,6 +982,9 @@ export function App() {
                 {task.dueDate ? <span>Due {formatDate(task.dueDate)}</span> : null}
                 {task.estimatedDuration ? (
                   <span>{task.estimatedDuration}</span>
+                ) : null}
+                {task.repeat !== "none" ? (
+                  <span>{formatRepeat(task.repeat)}</span>
                 ) : null}
                 {task.completedAt ? (
                   <span>Completed {formatDate(task.completedAt)}</span>
@@ -1132,6 +1245,25 @@ export function App() {
                 <option value={3}>3 days</option>
                 <option value={7}>1 week</option>
                 <option value={14}>2 weeks</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Repeat</span>
+              <select
+                value={draft.repeat}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    repeat: event.target.value as TaskRepeat,
+                  })
+                }
+              >
+                <option value="none">No repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
               </select>
             </label>
 

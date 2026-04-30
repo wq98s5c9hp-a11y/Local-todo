@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 5 executed
+Status: Sprint 6 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -104,3 +104,17 @@ Goal: Make the hosted app feel better on mobile and keep secondary controls out 
 - Moved export/import backup into the same menu.
 - Changed task creation to open from an `Add task` button.
 - Preserved existing task, sync, and backup behavior.
+
+## Sprint 6: Repeat Tasks And Magenta Add Action
+
+Goal: Add the CEO-requested yearly repeat option while keeping repeat behavior simple, and add a stronger magenta accent to the main add-task action.
+
+## Completed Scope
+
+- Added repeat options for none, daily, weekly, monthly, and yearly.
+- Added repeat selection to the add-task form.
+- Added repeat selection to task editing.
+- Created a new active copy when a repeating task is completed.
+- Kept the completed copy in the archive.
+- Added Supabase schema and migration support for repeat values.
+- Changed the main `Add task` button to a magenta accent.

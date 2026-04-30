@@ -6,6 +6,7 @@ create table if not exists public.tasks (
   estimated_duration text not null default '',
   due_date date,
   urgent_before_days integer not null default 1,
+  repeat text not null default 'none' check (repeat in ('none', 'daily', 'weekly', 'monthly', 'yearly')),
   details text not null default '',
   completed boolean not null default false,
   created_at timestamptz not null default now(),

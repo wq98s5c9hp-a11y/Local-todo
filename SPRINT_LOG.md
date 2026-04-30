@@ -204,3 +204,27 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 6 Approval
+
+- CEO requested yearly repeat support.
+- CEO requested more magenta in the color scheme, especially for `Add task`.
+
+### Sprint 6 Implementation Changes
+
+- Added repeat options for none, daily, weekly, monthly, and yearly.
+- Added repeat controls to add and edit flows.
+- Added repeat labels to task rows.
+- When a repeating task is completed, the completed task stays in the archive and a new active task is created for the next repeat date.
+- Added `repeat` to the Supabase schema.
+- Added `SUPABASE_REPEAT_MIGRATION.sql` for the already-created Supabase table.
+- Changed the main `Add task` button to a magenta accent.
+
+### Sprint 6 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.
+
+### Sprint 6 Manual Setup
+
+- Run `SUPABASE_REPEAT_MIGRATION.sql` in the Supabase dashboard SQL editor before using repeat tasks with account sync.
