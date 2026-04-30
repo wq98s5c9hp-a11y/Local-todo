@@ -186,6 +186,19 @@ Expected outcome:
 - Supabase Auth redirect URLs use the hosted URL.
 - The app can be opened from mobile on cellular.
 
+## Stage 13: Mobile Polish And Home Screen Support
+
+Status: Complete
+
+Make the app more comfortable as a phone-first task surface.
+
+Expected outcome:
+
+- Secondary account and backup controls move out of the way.
+- Task creation opens only when requested.
+- The app can be added to an iPhone home screen.
+- The top task list stays more visible on small screens.
+
 ## Later Ideas
 
 These are intentionally outside version 1:

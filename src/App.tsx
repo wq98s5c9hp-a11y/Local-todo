@@ -339,6 +339,8 @@ export function App() {
   const [authMessage, setAuthMessage] = useState("");
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [syncMessage, setSyncMessage] = useState("Local mode");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const loadingCloudRef = useRef(false);
 
   useEffect(() => {
@@ -488,6 +490,11 @@ export function App() {
     return { email, password: authPassword };
   }
 
+  function closeAddTask() {
+    setIsAddTaskOpen(false);
+    setDraft(emptyDraft);
+  }
+
   async function handleCreateAccount() {
     const credentials = validateAuthFields();
 
@@ -549,6 +556,7 @@ export function App() {
 
     persistTasks([createTaskFromDraft(draft), ...tasks]);
     setDraft(emptyDraft);
+    setIsAddTaskOpen(false);
   }
 
   function startEditing(task: Task) {
@@ -903,157 +911,220 @@ export function App() {
     <main className="app-shell">
       <header className="app-header">
         <div>
-          <h1>Local Todo</h1>
+          <h1>Todo</h1>
           <p className="save-status">
-            {lastSavedAt ? `Last saved ${formatDate(lastSavedAt)}` : "Ready"}
+            {user ? "Synced account" : "Local mode"}
           </p>
-          <p className="save-status">{syncMessage}</p>
         </div>
-        <div className="backup-actions">
-          <button type="button" onClick={exportBackup}>
-            Export backup
-          </button>
-          <label className="import-button">
-            <span>Import backup</span>
-            <input type="file" accept="application/json" onChange={importBackup} />
-          </label>
-        </div>
+        <button
+          className="icon-button"
+          type="button"
+          aria-expanded={isMenuOpen}
+          aria-label="Open menu"
+          onClick={() => setIsMenuOpen(true)}
+        >
+          Menu
+        </button>
       </header>
 
-      <section className="auth-panel" aria-labelledby="account">
-        <div>
-          <h2 id="account">Account Sync</h2>
-          <p className="muted">
-            {user
-              ? `Signed in as ${user.email}`
-              : authLoading
-                ? "Checking account..."
-                : "Sign in to sync tasks between devices."}
-          </p>
-          {authMessage ? <p className="muted">{authMessage}</p> : null}
+      {isMenuOpen ? (
+        <div className="menu-backdrop" onClick={() => setIsMenuOpen(false)}>
+          <aside
+            className="side-menu"
+            aria-label="Settings and account"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="menu-header">
+              <div>
+                <h2>Menu</h2>
+                <p className="muted">{syncMessage}</p>
+                <p className="muted">
+                  {lastSavedAt ? `Saved ${formatDate(lastSavedAt)}` : "Ready"}
+                </p>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <section className="menu-section" aria-labelledby="account">
+              <h3 id="account">Account Sync</h3>
+              <p className="muted">
+                {user
+                  ? `Signed in as ${user.email}`
+                  : authLoading
+                    ? "Checking account..."
+                    : "Sign in to sync tasks between devices."}
+              </p>
+              {authMessage ? <p className="muted">{authMessage}</p> : null}
+              {user ? (
+                <button type="button" onClick={handleSignOut}>
+                  Sign out
+                </button>
+              ) : (
+                <form className="auth-form" onSubmit={handleSignIn}>
+                  <input
+                    type="email"
+                    value={authEmail}
+                    onChange={(event) => setAuthEmail(event.target.value)}
+                    placeholder="Email"
+                    required
+                  />
+                  <input
+                    type="password"
+                    value={authPassword}
+                    onChange={(event) => setAuthPassword(event.target.value)}
+                    placeholder="Password"
+                    required
+                    minLength={6}
+                  />
+                  <button type="submit" disabled={authSubmitting}>
+                    Sign in
+                  </button>
+                  <button
+                    type="button"
+                    disabled={authSubmitting}
+                    onClick={handleCreateAccount}
+                  >
+                    Create account
+                  </button>
+                </form>
+              )}
+            </section>
+
+            <section className="menu-section">
+              <h3>Backup</h3>
+              <div className="backup-actions">
+                <button type="button" onClick={exportBackup}>
+                  Export
+                </button>
+                <label className="import-button">
+                  <span>Import</span>
+                  <input
+                    type="file"
+                    accept="application/json"
+                    onChange={importBackup}
+                  />
+                </label>
+              </div>
+            </section>
+          </aside>
         </div>
-        {user ? (
-          <button type="button" onClick={handleSignOut}>
-            Sign out
-          </button>
-        ) : (
-          <form className="auth-form" onSubmit={handleSignIn}>
-            <input
-              type="email"
-              value={authEmail}
-              onChange={(event) => setAuthEmail(event.target.value)}
-              placeholder="Email"
-              required
-            />
-            <input
-              type="password"
-              value={authPassword}
-              onChange={(event) => setAuthPassword(event.target.value)}
-              placeholder="Password"
-              required
-              minLength={6}
-            />
-            <button type="submit" disabled={authSubmitting}>
-              Sign in
-            </button>
-            <button
-              type="button"
-              disabled={authSubmitting}
-              onClick={handleCreateAccount}
-            >
-              Create account
-            </button>
-          </form>
-        )}
-      </section>
+      ) : null}
 
       {importMessage ? <p className="import-message">{importMessage}</p> : null}
 
-      <form className="task-form" onSubmit={handleAddTask}>
-        <label className="title-field">
-          <span>Task</span>
-          <input
-            value={draft.title}
-            onChange={(event) =>
-              setDraft({ ...draft, title: event.target.value })
-            }
-            placeholder="Add a task"
-          />
-        </label>
+      <button
+        className="add-task-trigger"
+        type="button"
+        onClick={() => setIsAddTaskOpen(true)}
+      >
+        Add task
+      </button>
 
-        <label>
-          <span>Importance</span>
-          <select
-            value={draft.importance}
-            onChange={(event) =>
-              setDraft({
-                ...draft,
-                importance: event.target.value as TaskImportance,
-              })
-            }
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-        </label>
+      {isAddTaskOpen ? (
+        <section className="add-panel" aria-labelledby="add-task">
+          <div className="panel-header">
+            <h2 id="add-task">Add Task</h2>
+            <button type="button" onClick={closeAddTask}>
+              Cancel
+            </button>
+          </div>
+          <form className="task-form" onSubmit={handleAddTask}>
+            <label className="title-field">
+              <span>Task</span>
+              <input
+                autoFocus
+                value={draft.title}
+                onChange={(event) =>
+                  setDraft({ ...draft, title: event.target.value })
+                }
+                placeholder="Add a task"
+              />
+            </label>
 
-        <label>
-          <span>Estimate</span>
-          <input
-            value={draft.estimatedDuration}
-            onChange={(event) =>
-              setDraft({ ...draft, estimatedDuration: event.target.value })
-            }
-            placeholder="30 min"
-          />
-        </label>
+            <label>
+              <span>Importance</span>
+              <select
+                value={draft.importance}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    importance: event.target.value as TaskImportance,
+                  })
+                }
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
 
-        <label>
-          <span>Due</span>
-          <input
-            type="date"
-            value={draft.dueDate}
-            onChange={(event) => setDraft({ ...draft, dueDate: event.target.value })}
-          />
-        </label>
+            <label>
+              <span>Estimate</span>
+              <input
+                value={draft.estimatedDuration}
+                onChange={(event) =>
+                  setDraft({ ...draft, estimatedDuration: event.target.value })
+                }
+                placeholder="30 min"
+              />
+            </label>
 
-        <label>
-          <span>Urgent before</span>
-          <select
-            value={draft.urgentBeforeDays}
-            onChange={(event) =>
-              setDraft({
-                ...draft,
-                urgentBeforeDays: Number(event.target.value),
-              })
-            }
-          >
-            <option value={0}>Due day</option>
-            <option value={1}>1 day</option>
-            <option value={3}>3 days</option>
-            <option value={7}>1 week</option>
-            <option value={14}>2 weeks</option>
-          </select>
-        </label>
+            <label>
+              <span>Due</span>
+              <input
+                type="date"
+                value={draft.dueDate}
+                onChange={(event) =>
+                  setDraft({ ...draft, dueDate: event.target.value })
+                }
+              />
+            </label>
 
-        <details className="details-entry">
-          <summary>Details</summary>
-          <label>
-            <span>Important info</span>
-            <textarea
-              value={draft.details}
-              onChange={(event) =>
-                setDraft({ ...draft, details: event.target.value })
-              }
-              placeholder="Notes, links, context"
-              rows={3}
-            />
-          </label>
-        </details>
+            <label>
+              <span>Urgent before</span>
+              <select
+                value={draft.urgentBeforeDays}
+                onChange={(event) =>
+                  setDraft({
+                    ...draft,
+                    urgentBeforeDays: Number(event.target.value),
+                  })
+                }
+              >
+                <option value={0}>Due day</option>
+                <option value={1}>1 day</option>
+                <option value={3}>3 days</option>
+                <option value={7}>1 week</option>
+                <option value={14}>2 weeks</option>
+              </select>
+            </label>
 
-        <button type="submit">Add</button>
-      </form>
+            <details className="details-entry">
+              <summary>Details</summary>
+              <label>
+                <span>Important info</span>
+                <textarea
+                  value={draft.details}
+                  onChange={(event) =>
+                    setDraft({ ...draft, details: event.target.value })
+                  }
+                  placeholder="Notes, links, context"
+                  rows={3}
+                />
+              </label>
+            </details>
+
+            <button type="submit">Add</button>
+          </form>
+        </section>
+      ) : null}
 
       <section aria-labelledby="active-tasks">
         <h2 id="active-tasks">Active Tasks</h2>

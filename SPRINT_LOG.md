@@ -182,3 +182,25 @@
 - Add Supabase environment variables in Vercel.
 - Update Supabase Site URL and Redirect URLs after deployment.
 - Test from phone and laptop.
+
+### Sprint 5 Approval
+
+- CEO approved mobile polish and home screen support.
+- CEO requested title and backup controls to be smaller and out of the way.
+- CEO requested account sync to move into a hamburger/menu.
+- CEO requested the add task form to open from a button instead of taking constant screen space.
+
+### Sprint 5 Implementation Changes
+
+- Added web app manifest.
+- Added app icon.
+- Added iPhone home-screen metadata.
+- Reduced the app header title.
+- Moved account sync and backup controls into a slide-out menu.
+- Replaced the always-visible add task form with an `Add task` button and collapsible add panel.
+- Kept task sync, backup/import, and task behavior unchanged.
+
+### Sprint 5 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

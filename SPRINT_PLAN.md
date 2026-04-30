@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 4 prepared
+Status: Sprint 5 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -89,3 +89,18 @@ Goal: Prepare the app for deployment so it can be accessed from phone and laptop
 - Add Supabase environment variables in Vercel.
 - Update Supabase Auth URLs after Vercel gives the deployed URL.
 - Test sign-in and task sync from phone and laptop.
+
+## Sprint 5: Mobile Polish And Home Screen Support
+
+Goal: Make the hosted app feel better on mobile and keep secondary controls out of the main task surface.
+
+## Completed Scope
+
+- Added PWA manifest.
+- Added app icon.
+- Added iPhone home-screen metadata.
+- Made the header smaller.
+- Moved account sync into a menu.
+- Moved export/import backup into the same menu.
+- Changed task creation to open from an `Add task` button.
+- Preserved existing task, sync, and backup behavior.
