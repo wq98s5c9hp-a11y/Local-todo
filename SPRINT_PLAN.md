@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 8 executed
+Status: Sprint 9 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -148,3 +148,16 @@ Goal: Correct repeat behavior and make the main task surface a more visual squar
 - Made normal active tasks cyan and the top four active tasks magenta.
 - Restored rounded corners.
 - Updated the logo with thicker repeating stripes.
+
+## Sprint 9: Fixed Tiles And App Icon Polish
+
+Goal: Keep task tiles visually stable and make the app icon update reliably across browser tabs and phone home screens.
+
+## Completed Scope
+
+- Changed task tiles to fixed dimensions instead of fluid resizing.
+- Kept mobile to a fixed two-column tile grid.
+- Added an explicit date-picker button beside due date fields.
+- Replaced the logo with solid 45-degree stripes across the full square.
+- Added PNG app icon assets for installed/home-screen use.
+- Added cache-busted icon references in app metadata.

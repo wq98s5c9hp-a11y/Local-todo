@@ -231,6 +231,20 @@ Completed features:
 - Limited due dates to a maximum of 365 days out.
 - Updated the logo to use thicker repeating stripes across the check shape.
 
+## Stage 16: Fixed Tiles And App Icon Polish
+
+Status: Complete
+
+Refine the tile grid and icon behavior after CEO review.
+
+Completed features:
+
+- Changed task tiles from fluid/resizing squares to fixed-size tiles.
+- Kept two fixed tile columns on mobile.
+- Added an explicit `Date` picker button next to due date inputs.
+- Replaced the logo with full-square 45-degree stripes alternating black, magenta, and cyan.
+- Added PNG app icons for browser and iPhone home-screen support.
+
 ## Later Ideas
 
 These are intentionally outside version 1:

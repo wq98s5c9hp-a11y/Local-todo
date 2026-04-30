@@ -474,6 +474,8 @@ export function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => loadDarkMode());
   const loadingCloudRef = useRef(false);
   const completingTaskIdsRef = useRef<Set<string>>(new Set());
+  const draftDueDateRef = useRef<HTMLInputElement | null>(null);
+  const editingDueDateRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -659,6 +661,23 @@ export function App() {
     documentWithTransition.startViewTransition(() => {
       persistTasks(nextTasks);
     });
+  }
+
+  function showDatePicker(input: HTMLInputElement | null) {
+    if (!input) {
+      return;
+    }
+
+    const dateInput = input as HTMLInputElement & {
+      showPicker?: () => void;
+    };
+
+    if (typeof dateInput.showPicker === "function") {
+      dateInput.showPicker();
+      return;
+    }
+
+    dateInput.focus();
   }
 
   function validateAuthFields() {
@@ -1038,17 +1057,27 @@ export function App() {
 
             <label>
               <span>Due</span>
-              <input
-                type="date"
-                max={getMaxDueDateInputValue()}
-                value={editingDraft.dueDate}
-                onChange={(event) =>
-                  setEditingDraft({
-                    ...editingDraft,
-                    dueDate: event.target.value,
-                  })
-                }
-              />
+              <div className="date-control">
+                <input
+                  ref={editingDueDateRef}
+                  type="date"
+                  max={getMaxDueDateInputValue()}
+                  value={editingDraft.dueDate}
+                  onChange={(event) =>
+                    setEditingDraft({
+                      ...editingDraft,
+                      dueDate: event.target.value,
+                    })
+                  }
+                />
+                <button
+                  type="button"
+                  aria-label="Open due date picker"
+                  onClick={() => showDatePicker(editingDueDateRef.current)}
+                >
+                  Date
+                </button>
+              </div>
             </label>
 
             <label>
@@ -1398,14 +1427,24 @@ export function App() {
 
                 <label>
                   <span>Due</span>
-                  <input
-                    type="date"
-                    max={getMaxDueDateInputValue()}
-                    value={draft.dueDate}
-                    onChange={(event) =>
-                      setDraft({ ...draft, dueDate: event.target.value })
-                    }
-                  />
+                  <div className="date-control">
+                    <input
+                      ref={draftDueDateRef}
+                      type="date"
+                      max={getMaxDueDateInputValue()}
+                      value={draft.dueDate}
+                      onChange={(event) =>
+                        setDraft({ ...draft, dueDate: event.target.value })
+                      }
+                    />
+                    <button
+                      type="button"
+                      aria-label="Open due date picker"
+                      onClick={() => showDatePicker(draftDueDateRef.current)}
+                    >
+                      Date
+                    </button>
+                  </div>
                 </label>
 
                 <label>
