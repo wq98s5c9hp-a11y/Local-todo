@@ -1,5 +1,6 @@
 import {
   ChangeEvent,
+  CSSProperties,
   FormEvent,
   useEffect,
   useMemo,
@@ -63,6 +64,7 @@ const STORAGE_KEY = "local-first-todo.tasks";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
 const BACKUP_VERSION = 1;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_DUE_DAYS = 365;
 
 const emptyDraft: TaskDraft = {
   title: "",
@@ -152,7 +154,7 @@ function normalizeTask(value: unknown): Task | null {
     importance,
     estimatedDuration:
       typeof task.estimatedDuration === "string" ? task.estimatedDuration : "",
-    dueDate: typeof task.dueDate === "string" ? task.dueDate : "",
+    dueDate: typeof task.dueDate === "string" ? normalizeDueDate(task.dueDate) : "",
     urgentBeforeDays: normalizeUrgentBeforeDays(task.urgentBeforeDays),
     sortOrder: normalizeSortOrder(task.sortOrder),
     details: typeof task.details === "string" ? task.details : "",
@@ -211,6 +213,40 @@ function parseLocalDate(value: string) {
   return new Date(year, month - 1, day);
 }
 
+function getTodayStart() {
+  const today = new Date();
+
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+}
+
+function formatDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getMaxDueDateInputValue() {
+  const maxDate = getTodayStart();
+  maxDate.setDate(maxDate.getDate() + MAX_DUE_DAYS);
+
+  return formatDateInputValue(maxDate);
+}
+
+function normalizeDueDate(value: string) {
+  const dueDate = parseLocalDate(value);
+
+  if (!dueDate) {
+    return "";
+  }
+
+  const maxDate = getTodayStart();
+  maxDate.setDate(maxDate.getDate() + MAX_DUE_DAYS);
+
+  return formatDateInputValue(dueDate > maxDate ? maxDate : dueDate);
+}
+
 function getDaysUntilDue(dueDate: string) {
   const date = parseLocalDate(dueDate);
 
@@ -218,12 +254,7 @@ function getDaysUntilDue(dueDate: string) {
     return null;
   }
 
-  const today = new Date();
-  const todayStart = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
+  const todayStart = getTodayStart();
 
   return Math.ceil((date.getTime() - todayStart.getTime()) / DAY_MS);
 }
@@ -300,7 +331,7 @@ function createTaskFromDraft(draft: TaskDraft): Task {
     title: draft.title.trim(),
     importance: draft.importance,
     estimatedDuration: draft.estimatedDuration.trim(),
-    dueDate: draft.dueDate,
+    dueDate: normalizeDueDate(draft.dueDate),
     urgentBeforeDays: draft.urgentBeforeDays,
     sortOrder: Date.now() * -1,
     details: draft.details.trim(),
@@ -342,18 +373,10 @@ function addRepeatInterval(date: Date, repeat: TaskRepeat) {
   }
 
   if (repeat === "yearly") {
-    nextDate.setFullYear(nextDate.getFullYear() + 1);
+    nextDate.setDate(nextDate.getDate() + MAX_DUE_DAYS);
   }
 
   return nextDate;
-}
-
-function formatDateInputValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
 }
 
 function createNextRepeatingTask(task: Task, completedAt: string): Task | null {
@@ -361,15 +384,14 @@ function createNextRepeatingTask(task: Task, completedAt: string): Task | null {
     return null;
   }
 
-  const dueDate = parseLocalDate(task.dueDate) ?? new Date(completedAt);
-  const nextDueDate = addRepeatInterval(dueDate, task.repeat);
+  const nextDueDate = addRepeatInterval(new Date(completedAt), task.repeat);
 
   return {
     ...task,
     id: createId(),
     completed: false,
     completedAt: undefined,
-    dueDate: formatDateInputValue(nextDueDate),
+    dueDate: normalizeDueDate(formatDateInputValue(nextDueDate)),
     sortOrder: Date.now() * -1,
     createdAt: completedAt,
     updatedAt: completedAt,
@@ -401,7 +423,7 @@ function fromTaskRow(row: TaskRow): Task {
     title: row.title,
     importance: row.importance,
     estimatedDuration: row.estimated_duration,
-    dueDate: row.due_date || "",
+    dueDate: normalizeDueDate(row.due_date || ""),
     urgentBeforeDays: row.urgent_before_days,
     sortOrder: normalizeSortOrder(row.sort_order),
     details: row.details,
@@ -451,6 +473,7 @@ export function App() {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => loadDarkMode());
   const loadingCloudRef = useRef(false);
+  const completingTaskIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -534,9 +557,6 @@ export function App() {
     () => tasks.filter((task) => task.completed),
     [tasks],
   );
-
-  const visibleNowTasks = activeTasks.slice(0, 4);
-  const laterActiveTasks = activeTasks.slice(4);
 
   function normalizeActiveOrder(orderedActiveTasks: Task[]) {
     const orderById = new Map(
@@ -624,6 +644,21 @@ export function App() {
     setTasks(nextTasks);
     saveTasks(nextTasks);
     syncCloudTasks(nextTasks);
+  }
+
+  function persistTasksWithTransition(nextTasks: Task[]) {
+    const documentWithTransition = document as Document & {
+      startViewTransition?: (callback: () => void) => void;
+    };
+
+    if (!documentWithTransition.startViewTransition) {
+      persistTasks(nextTasks);
+      return;
+    }
+
+    documentWithTransition.startViewTransition(() => {
+      persistTasks(nextTasks);
+    });
   }
 
   function validateAuthFields() {
@@ -744,7 +779,7 @@ export function App() {
               title,
               importance: editingDraft.importance,
               estimatedDuration: editingDraft.estimatedDuration.trim(),
-              dueDate: editingDraft.dueDate,
+              dueDate: normalizeDueDate(editingDraft.dueDate),
               urgentBeforeDays: editingDraft.urgentBeforeDays,
               details: editingDraft.details.trim(),
               repeat: editingDraft.repeat,
@@ -765,6 +800,11 @@ export function App() {
   }
 
   function completeTask(taskId: string) {
+    if (completingTaskIdsRef.current.has(taskId)) {
+      return;
+    }
+
+    completingTaskIdsRef.current.add(taskId);
     const now = new Date().toISOString();
     const taskToComplete = tasks.find((task) => task.id === taskId);
     const nextRepeatingTask = taskToComplete
@@ -789,6 +829,10 @@ export function App() {
     if (editingTaskId === taskId) {
       cancelEditing();
     }
+
+    window.setTimeout(() => {
+      completingTaskIdsRef.current.delete(taskId);
+    }, 600);
   }
 
   function restoreTask(taskId: string) {
@@ -828,7 +872,7 @@ export function App() {
       reorderedTasks[currentIndex],
     ];
 
-    persistTasks(normalizeActiveOrder(reorderedTasks));
+    persistTasksWithTransition(normalizeActiveOrder(reorderedTasks));
   }
 
   function toggleTaskDetails(taskId: string) {
@@ -904,9 +948,20 @@ export function App() {
     const canMoveDown = activeIndex !== null && activeIndex < activeTasks.length - 1;
 
     return (
-      <li
-        className={isFeatured ? "task task-featured" : "task"}
+      <article
+        className={[
+          "task",
+          isFeatured ? "task-featured" : "",
+          isEditing ? "task-editing" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         key={task.id}
+        style={
+          {
+            viewTransitionName: `task-${task.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
+          } as CSSProperties
+        }
       >
         {activeIndex !== null ? (
           <div className="task-move-actions" aria-label="Move task">
@@ -985,6 +1040,7 @@ export function App() {
               <span>Due</span>
               <input
                 type="date"
+                max={getMaxDueDateInputValue()}
                 value={editingDraft.dueDate}
                 onChange={(event) =>
                   setEditingDraft({
@@ -1156,7 +1212,7 @@ export function App() {
             </div>
           </>
         )}
-      </li>
+      </article>
     );
   }
 
@@ -1166,10 +1222,10 @@ export function App() {
         <div className="brand-block">
           <img className="app-logo" src="/icon.svg" alt="" aria-hidden="true" />
           <div>
-          <h1>Todo</h1>
-          <p className="save-status">
-            {user ? "Synced account" : "Local mode"}
-          </p>
+            <h1>Todo</h1>
+            <p className="save-status">
+              {user ? "Synced account" : "Local mode"}
+            </p>
           </div>
         </div>
         <button
@@ -1290,160 +1346,149 @@ export function App() {
       <section aria-labelledby="active-tasks">
         <h2 id="active-tasks">Active Tasks</h2>
 
-        {isAddTaskOpen ? (
-        <section className="task add-panel" aria-labelledby="add-task">
-          <div className="panel-header">
-            <h2 id="add-task">Add Task</h2>
-            <button type="button" onClick={closeAddTask}>
-              Cancel
+        <div className="task-grid active-task-grid">
+          {isAddTaskOpen ? (
+            <section className="task add-panel" aria-labelledby="add-task">
+              <div className="panel-header">
+                <h2 id="add-task">Add Task</h2>
+                <button type="button" onClick={closeAddTask}>
+                  Cancel
+                </button>
+              </div>
+              <form className="task-form" onSubmit={handleAddTask}>
+                <label className="title-field">
+                  <span>Task</span>
+                  <input
+                    autoFocus
+                    value={draft.title}
+                    onChange={(event) =>
+                      setDraft({ ...draft, title: event.target.value })
+                    }
+                    placeholder="Add a task"
+                  />
+                </label>
+
+                <label>
+                  <span>Importance</span>
+                  <select
+                    value={draft.importance}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        importance: event.target.value as TaskImportance,
+                      })
+                    }
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Estimate</span>
+                  <input
+                    value={draft.estimatedDuration}
+                    onChange={(event) =>
+                      setDraft({ ...draft, estimatedDuration: event.target.value })
+                    }
+                    placeholder="30 min"
+                  />
+                </label>
+
+                <label>
+                  <span>Due</span>
+                  <input
+                    type="date"
+                    max={getMaxDueDateInputValue()}
+                    value={draft.dueDate}
+                    onChange={(event) =>
+                      setDraft({ ...draft, dueDate: event.target.value })
+                    }
+                  />
+                </label>
+
+                <label>
+                  <span>Urgent before</span>
+                  <select
+                    value={draft.urgentBeforeDays}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        urgentBeforeDays: Number(event.target.value),
+                      })
+                    }
+                  >
+                    <option value={0}>Due day</option>
+                    <option value={1}>1 day</option>
+                    <option value={3}>3 days</option>
+                    <option value={7}>1 week</option>
+                    <option value={14}>2 weeks</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Repeat</span>
+                  <select
+                    value={draft.repeat}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        repeat: event.target.value as TaskRepeat,
+                      })
+                    }
+                  >
+                    <option value="none">No repeat</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </label>
+
+                <details className="details-entry">
+                  <summary>Details</summary>
+                  <label>
+                    <span>Important info</span>
+                    <textarea
+                      value={draft.details}
+                      onChange={(event) =>
+                        setDraft({ ...draft, details: event.target.value })
+                      }
+                      placeholder="Notes, links, context"
+                      rows={3}
+                    />
+                  </label>
+                </details>
+
+                <button type="submit">Add</button>
+              </form>
+            </section>
+          ) : (
+            <button
+              className="task add-task-trigger"
+              type="button"
+              onClick={() => setIsAddTaskOpen(true)}
+            >
+              <span className="add-plus">+</span>
+              <span>Add task</span>
             </button>
-          </div>
-          <form className="task-form" onSubmit={handleAddTask}>
-            <label className="title-field">
-              <span>Task</span>
-              <input
-                autoFocus
-                value={draft.title}
-                onChange={(event) =>
-                  setDraft({ ...draft, title: event.target.value })
-                }
-                placeholder="Add a task"
-              />
-            </label>
+          )}
 
-            <label>
-              <span>Importance</span>
-              <select
-                value={draft.importance}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    importance: event.target.value as TaskImportance,
-                  })
-                }
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </label>
+          {activeTasks.map((task, index) => renderTask(task, index < 4, index))}
+        </div>
 
-            <label>
-              <span>Estimate</span>
-              <input
-                value={draft.estimatedDuration}
-                onChange={(event) =>
-                  setDraft({ ...draft, estimatedDuration: event.target.value })
-                }
-                placeholder="30 min"
-              />
-            </label>
-
-            <label>
-              <span>Due</span>
-              <input
-                type="date"
-                value={draft.dueDate}
-                onChange={(event) =>
-                  setDraft({ ...draft, dueDate: event.target.value })
-                }
-              />
-            </label>
-
-            <label>
-              <span>Urgent before</span>
-              <select
-                value={draft.urgentBeforeDays}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    urgentBeforeDays: Number(event.target.value),
-                  })
-                }
-              >
-                <option value={0}>Due day</option>
-                <option value={1}>1 day</option>
-                <option value={3}>3 days</option>
-                <option value={7}>1 week</option>
-                <option value={14}>2 weeks</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Repeat</span>
-              <select
-                value={draft.repeat}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    repeat: event.target.value as TaskRepeat,
-                  })
-                }
-              >
-                <option value="none">No repeat</option>
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-              </select>
-            </label>
-
-            <details className="details-entry">
-              <summary>Details</summary>
-              <label>
-                <span>Important info</span>
-                <textarea
-                  value={draft.details}
-                  onChange={(event) =>
-                    setDraft({ ...draft, details: event.target.value })
-                  }
-                  placeholder="Notes, links, context"
-                  rows={3}
-                />
-              </label>
-            </details>
-
-            <button type="submit">Add</button>
-          </form>
-        </section>
-        ) : (
-          <button
-            className="task add-task-trigger"
-            type="button"
-            onClick={() => setIsAddTaskOpen(true)}
-          >
-            <span className="add-plus">+</span>
-            <span>Add task</span>
-          </button>
-        )}
-
-        {activeTasks.length ? (
-          <>
-            <ul className="task-list top-task-list">
-              {visibleNowTasks.map((task, index) => renderTask(task, true, index))}
-            </ul>
-            {laterActiveTasks.length ? (
-              <>
-                <h3>Later</h3>
-                <ul className="task-list">
-                  {laterActiveTasks.map((task, index) =>
-                    renderTask(task, false, index + visibleNowTasks.length),
-                  )}
-                </ul>
-              </>
-            ) : null}
-          </>
-        ) : (
+        {!activeTasks.length ? (
           <p className="empty-state">No active tasks yet.</p>
-        )}
+        ) : null}
       </section>
 
       <section aria-labelledby="completed-tasks">
         <h2 id="completed-tasks">Completed Archive</h2>
         {completedTasks.length ? (
-          <ul className="task-list">
+          <div className="task-grid">
             {completedTasks.map((task) => renderTask(task))}
-          </ul>
+          </div>
         ) : (
           <p className="empty-state">Completed tasks will appear here.</p>
         )}

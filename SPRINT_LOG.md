@@ -257,3 +257,33 @@
 ### Sprint 7 Manual Setup
 
 - Run `SUPABASE_SORT_ORDER_MIGRATION.sql` in the Supabase dashboard SQL editor before using the deployed manual ordering feature with account sync.
+
+### Sprint 8 Correction Request
+
+- CEO reported repeat completion was behaving incorrectly by advancing years instead of clearly creating the next task.
+- CEO clarified task cards should be square tiles in a grid.
+- CEO requested two columns on mobile and a responsive square grid on desktop.
+- CEO requested reorder movement animation.
+- CEO requested thicker repeating logo stripes that fill the box.
+- CEO requested rounded corners to remain.
+- CEO requested solid color task highlights: magenta for top tasks and cyan for normal tasks.
+- CEO requested no task due date more than 365 days out.
+
+### Sprint 8 Implementation Changes
+
+- Repeat tasks now schedule the next due date from the completion date.
+- Yearly repeat uses a 365-day interval to respect the 365-day maximum.
+- Added a guard against rapid repeated completion clicks.
+- Added a due-date max of 365 days to task forms and normalisation.
+- Changed active tasks into a square tile grid.
+- Kept two columns on mobile and a responsive grid on desktop.
+- Added browser view-transition support for move up/down reordering.
+- Made normal active tasks solid cyan.
+- Made the top four active tasks solid magenta.
+- Restored rounded card corners.
+- Updated the logo with thicker repeating cyan, magenta, and black stripes clipped through the check mark.
+
+### Sprint 8 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

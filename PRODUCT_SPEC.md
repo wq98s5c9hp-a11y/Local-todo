@@ -129,6 +129,8 @@ CEO direction: completed tasks should move to an archive, remain available for r
 
 Repeating tasks can be set to daily, weekly, monthly, or yearly. When a repeating task is completed, the completed copy moves to the archive and a new active copy is created for the next repeat date.
 
+Repeat scheduling is based on the completion date, and generated due dates should stay within 365 days.
+
 ### Local Browser Storage
 
 Task data should persist in the browser using LocalStorage.
@@ -166,6 +168,7 @@ As of Product Director Mode setup, the app already has a small Vite, React, and 
 - Details field
 - Repeat option with none, daily, weekly, monthly, and yearly choices
 - Manual move up/down ordering for active tasks
+- Grid layout with normal active tasks in cyan and the top four active tasks in magenta
 - Active task sorting by urgency and importance
 - JSON export backup
 - JSON import backup

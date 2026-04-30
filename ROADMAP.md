@@ -214,6 +214,23 @@ Completed features:
 - Highlighted the top four active tasks.
 - Moved `Add task` into the active list as a task-shaped box.
 
+## Stage 15: Square Grid Refinement
+
+Status: Complete
+
+Refine the task surface after CEO review.
+
+Completed features:
+
+- Changed active tasks into a square tile grid.
+- Kept two columns on mobile and a responsive grid on desktop.
+- Kept rounded corners.
+- Made highlighted tiles solid magenta and normal active tiles solid cyan.
+- Added browser-supported view-transition animation for task reordering.
+- Changed repeat scheduling to create the next task from the completion date.
+- Limited due dates to a maximum of 365 days out.
+- Updated the logo to use thicker repeating stripes across the check shape.
+
 ## Later Ideas
 
 These are intentionally outside version 1:

@@ -1,7 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="64" fill="#f7f8f2"/>
-  <path d="M94 262 196 364 418 142" fill="none" stroke="#171712" stroke-width="116" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="M94 262 196 364 418 142" fill="none" stroke="#00a7c8" stroke-width="84" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="M94 262 196 364 418 142" fill="none" stroke="#d1008f" stroke-width="52" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="M94 262 196 364 418 142" fill="none" stroke="#171712" stroke-width="20" stroke-linecap="square" stroke-linejoin="miter"/>
+  <defs>
+    <clipPath id="check">
+      <path d="M76 257 198 379 443 134" fill="none" stroke="#000" stroke-width="138" stroke-linecap="square" stroke-linejoin="miter"/>
+    </clipPath>
+  </defs>
+  <rect width="512" height="512" rx="76" fill="#f7f8f2"/>
+  <g clip-path="url(#check)">
+    <rect width="512" height="512" fill="#171712"/>
+    <path d="M-150 94H662" stroke="#00a7c8" stroke-width="64" transform="rotate(-45 256 256)"/>
+    <path d="M-150 174H662" stroke="#d1008f" stroke-width="64" transform="rotate(-45 256 256)"/>
+    <path d="M-150 254H662" stroke="#171712" stroke-width="64" transform="rotate(-45 256 256)"/>
+    <path d="M-150 334H662" stroke="#00a7c8" stroke-width="64" transform="rotate(-45 256 256)"/>
+    <path d="M-150 414H662" stroke="#d1008f" stroke-width="64" transform="rotate(-45 256 256)"/>
+    <path d="M-150 494H662" stroke="#171712" stroke-width="64" transform="rotate(-45 256 256)"/>
+    <path d="M-150 574H662" stroke="#00a7c8" stroke-width="64" transform="rotate(-45 256 256)"/>
+  </g>
+  <rect x="10" y="10" width="492" height="492" rx="68" fill="none" stroke="#171712" stroke-width="20"/>
 </svg>

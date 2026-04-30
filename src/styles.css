@@ -2,7 +2,9 @@
   --bg: #f7f8f2;
   --surface: #ffffff;
   --surface-strong: #fffdf2;
-  --surface-top: #fff8cf;
+  --surface-top: #d1008f;
+  --task-normal: #00a7c8;
+  --task-text: #ffffff;
   --text: #171712;
   --muted: #64675f;
   --label: #3f443d;
@@ -36,7 +38,9 @@ html[data-theme="dark"] {
   --bg: #10130f;
   --surface: #181d17;
   --surface-strong: #20271f;
-  --surface-top: #2b2812;
+  --surface-top: #ff4fc3;
+  --task-normal: #00bcd4;
+  --task-text: #071315;
   --text: #f2f5ea;
   --muted: #aeb8a8;
   --label: #d3dbc9;
@@ -148,7 +152,7 @@ label {
   width: 40px;
   height: 40px;
   border: 1px solid var(--border-strong);
-  border-radius: 6px;
+  border-radius: 10px;
 }
 
 h1,
@@ -271,8 +275,9 @@ h3 {
 
 .add-task-trigger {
   width: 100%;
+  min-height: auto;
   justify-content: flex-start;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
   background: var(--magenta);
   border-color: var(--magenta);
   color: var(--magenta-text);
@@ -291,12 +296,14 @@ h3 {
 }
 
 .add-panel {
-  margin-bottom: 1rem;
+  grid-column: 1 / -1;
+  margin-bottom: 0;
   display: block;
   padding: 0.85rem;
   border-color: var(--magenta);
-  border-radius: 0;
+  border-radius: 14px;
   background: var(--surface-strong);
+  aspect-ratio: auto;
 }
 
 .panel-header {
@@ -333,47 +340,57 @@ h3 {
   margin-top: 0.75rem;
 }
 
-.task-list {
+.task-grid {
   display: grid;
-  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.top-task-list {
-  gap: 0.6rem;
-}
-
 .task {
   display: flex;
-  align-items: center;
+  position: relative;
+  align-items: stretch;
   justify-content: space-between;
+  flex-direction: column;
   gap: 0.7rem;
   padding: 0.65rem;
   border: 1px solid var(--border);
-  border-radius: 0;
-  background: var(--surface);
+  border-radius: 14px;
+  background: var(--task-normal);
+  color: var(--task-text);
+  aspect-ratio: 1 / 1;
+  box-shadow: 0 6px 18px var(--shadow);
+  contain: layout;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .task-featured {
-  min-height: 68px;
-  border-color: var(--warn);
+  border-color: var(--magenta);
   background: var(--surface-top);
-  box-shadow: 0 5px 14px var(--shadow);
+  color: var(--magenta-text);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--magenta) 28%, transparent);
 }
 
 .task-featured .task-title {
-  font-size: 1.02rem;
+  font-size: 1.05rem;
 }
 
 .task-main {
   flex: 1;
   min-width: 0;
+  padding-right: 2.3rem;
+  overflow: hidden;
 }
 
 .task-title {
-  color: var(--text);
+  color: inherit;
   font-size: 0.98rem;
   font-weight: 650;
   overflow-wrap: anywhere;
@@ -389,7 +406,7 @@ h3 {
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-top: 0.35rem;
-  color: var(--muted);
+  color: color-mix(in srgb, currentColor 80%, transparent);
   font-size: 0.8rem;
 }
 
@@ -434,8 +451,8 @@ html[data-theme="dark"] .importance.medium {
   display: grid;
   gap: 0.4rem;
   margin-top: 0.75rem;
-  border-left: 3px solid var(--border);
-  color: var(--label);
+  border-left: 3px solid color-mix(in srgb, currentColor 38%, transparent);
+  color: inherit;
   padding-left: 0.75rem;
   white-space: pre-wrap;
 }
@@ -445,12 +462,16 @@ html[data-theme="dark"] .importance.medium {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.35rem;
+  margin-top: auto;
 }
 
 .task-move-actions {
   display: grid;
   flex: 0 0 auto;
   gap: 0.25rem;
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
 }
 
 .task-move-actions button,
@@ -461,6 +482,9 @@ html[data-theme="dark"] .importance.medium {
   height: 32px;
   min-height: 32px;
   place-items: center;
+  border-color: color-mix(in srgb, currentColor 42%, transparent);
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  color: var(--text);
   padding: 0;
 }
 
@@ -481,6 +505,14 @@ html[data-theme="dark"] .importance.medium {
   align-items: end;
   gap: 0.75rem;
   width: 100%;
+  color: var(--text);
+}
+
+.task-editing {
+  grid-column: 1 / -1;
+  aspect-ratio: auto;
+  background: var(--surface-strong);
+  color: var(--text);
 }
 
 .wide-field {
@@ -535,6 +567,11 @@ html[data-theme="dark"] .importance.medium {
     justify-content: flex-start;
   }
 
+  .task-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
   .task-form,
   .task-edit-form {
     grid-template-columns: 1fr;
@@ -562,5 +599,12 @@ html[data-theme="dark"] .importance.medium {
 
   .task-move-actions {
     align-self: center;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(*) {
+    animation-duration: 220ms;
+    animation-timing-function: ease-out;
   }
 }

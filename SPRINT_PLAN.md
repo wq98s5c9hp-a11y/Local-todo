@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 7 executed
+Status: Sprint 8 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -132,3 +132,19 @@ Goal: Make the main list more compact, more visual, and more directly controllab
 - Changed task list items to square cards.
 - Highlighted the top four active tasks.
 - Moved the add-task entry point into the active task list.
+
+## Sprint 8: Square Grid Refinement
+
+Goal: Correct repeat behavior and make the main task surface a more visual square grid.
+
+## Completed Scope
+
+- Changed repeat generation to schedule from the completion date.
+- Guarded completion against rapid double-click repeat creation.
+- Limited due dates to 365 days out.
+- Changed the active list to a square tile grid.
+- Kept two columns on mobile and a responsive grid on desktop.
+- Added view-transition animation when moving tasks.
+- Made normal active tasks cyan and the top four active tasks magenta.
+- Restored rounded corners.
+- Updated the logo with thicker repeating stripes.
