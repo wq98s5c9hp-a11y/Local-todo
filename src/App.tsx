@@ -428,7 +428,7 @@ function loadColorScheme(): ColorScheme {
 function loadSaturation() {
   const rawSaturation = window.localStorage.getItem(SATURATION_STORAGE_KEY);
 
-  if (rawSaturation === null) {
+  if (rawSaturation === null || rawSaturation === "0") {
     return 90;
   }
 
@@ -559,17 +559,6 @@ function getFlagScore(task: Task) {
   return task.flagged ? FLAGGED_SCORE : 0;
 }
 
-function getDueTimeScore(task: Task) {
-  const daysUntilDue = getDaysUntilDue(task.dueDate);
-  const dueTimeMinutes = timeValueToMinutes(task.dueTime);
-
-  if (daysUntilDue !== 0 || dueTimeMinutes === null) {
-    return 0;
-  }
-
-  return (DAY_MINUTES - dueTimeMinutes) / DAY_MINUTES;
-}
-
 function getTaskBaseScore(task: Task) {
   const daysUntilDue = getDaysUntilDue(task.dueDate);
   const importanceScore = (importanceWeight[task.importance] - 1) * 34;
@@ -582,8 +571,7 @@ function getTaskBaseScore(task: Task) {
     getDueScore(daysUntilDue) +
     importanceScore +
     urgentThresholdScore +
-    getFlagScore(task) +
-    getDueTimeScore(task)
+    getFlagScore(task)
   );
 }
 
@@ -735,8 +723,12 @@ function getUrgencyLabel(task: Task) {
   return "";
 }
 
-function getImportanceShortLabel(importance: TaskImportance) {
-  return importance[0].toUpperCase();
+function getImportanceLabel(importance: TaskImportance) {
+  if (importance === "medium") {
+    return "Normal";
+  }
+
+  return importance[0].toUpperCase() + importance.slice(1);
 }
 
 function getDueDateParts(value: string) {
@@ -1033,6 +1025,8 @@ export function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuTab, setMenuTab] = useState<MenuTab>("settings");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isDraftSpecificTimeEnabled, setIsDraftSpecificTimeEnabled] =
+    useState(false);
   const [signupConfirmStep, setSignupConfirmStep] =
     useState<SignupConfirmStep | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => loadDarkMode());
@@ -1292,6 +1286,7 @@ export function App() {
     setEditingDraft(emptyDraft);
     setIsAddTaskOpen(false);
     setDraft(emptyDraft);
+    setIsDraftSpecificTimeEnabled(false);
     window.localStorage.removeItem(SYNCED_USER_STORAGE_KEY);
     setSyncMessage("Local mode");
     setImportMessage(message);
@@ -1358,12 +1353,14 @@ export function App() {
     if (!documentWithTransition.startViewTransition) {
       setIsAddTaskOpen(false);
       setDraft(emptyDraft);
+      setIsDraftSpecificTimeEnabled(false);
       return;
     }
 
     documentWithTransition.startViewTransition(() => {
       setIsAddTaskOpen(false);
       setDraft(emptyDraft);
+      setIsDraftSpecificTimeEnabled(false);
     });
   }
 
@@ -1443,6 +1440,7 @@ export function App() {
 
     persistTasksWithTransition([createTaskFromDraft(draft), ...tasks]);
     setDraft(emptyDraft);
+    setIsDraftSpecificTimeEnabled(false);
     setIsAddTaskOpen(false);
   }
 
@@ -1816,6 +1814,7 @@ export function App() {
   function renderEstimateControl(
     value: string,
     onChange: (nextValue: string) => void,
+    emptyLabel = "No estimate",
   ) {
     const estimateUnit = parseEstimateUnit(value);
 
@@ -1836,7 +1835,7 @@ export function App() {
             onChange(unit);
           }}
         >
-          <option value="">No estimate</option>
+          <option value="">{emptyLabel}</option>
           {estimateUnits.map((unit) => (
             <option key={unit} value={unit}>
               {unit[0].toUpperCase() + unit.slice(1)}
@@ -1981,7 +1980,7 @@ export function App() {
                 }
               >
                 <option value="low">Low</option>
-                <option value="medium">Medium</option>
+                <option value="medium">Normal</option>
                 <option value="high">High</option>
               </select>
             </label>
@@ -2163,10 +2162,12 @@ export function App() {
             >
               <p className={task.completed ? "task-title completed" : "task-title"}>
                 {urgencyLabel === "Overdue" ? (
-                  <span className="title-status title-status-overdue" aria-label="Overdue" />
+                  <span className="title-status title-status-pill" aria-label="Overdue">
+                    <span className="title-status-overdue" />
+                  </span>
                 ) : null}
                 {urgencyLabel === "Due" ? (
-                  <span className="title-status title-status-due">Due</span>
+                  <span className="title-status title-status-pill title-status-due">Due</span>
                 ) : null}
                 {task.title}
               </p>
@@ -2183,20 +2184,15 @@ export function App() {
                 <div className="meta-row meta-priority-row">
                   <span
                     className={`importance-token ${task.importance}`}
-                    aria-label={`${task.importance} importance`}
-                    title={`${task.importance} importance`}
+                    aria-label={`${getImportanceLabel(task.importance)} importance`}
+                    title={`${getImportanceLabel(task.importance)} importance`}
                   >
-                    {getImportanceShortLabel(task.importance)}
+                    {getImportanceLabel(task.importance)}
                   </span>
-                  {urgencyLabel === "Urgent" ? (
-                    <span className="urgency urgent">
-                      {urgencyLabel}
+                  {urgencyLabel === "Urgent" || urgencyLabel === "Due" ? (
+                    <span className={`urgency ${urgencyLabel === "Due" ? "due" : "urgent"}`}>
+                      {urgencyLabel === "Due" ? "Urgent" : urgencyLabel}
                     </span>
-                  ) : null}
-                </div>
-                <div className="meta-row meta-extra-row">
-                  {task.repeat !== "none" ? (
-                    <span>{formatRepeat(task.repeat)}</span>
                   ) : null}
                 </div>
               </div>
@@ -2215,6 +2211,12 @@ export function App() {
                   ) : null}
                   {task.dueTime ? (
                     <p className="muted">Start time {formatTime(task.dueTime)}</p>
+                  ) : null}
+                  {task.estimatedDuration ? (
+                    <p className="muted">Effort size {task.estimatedDuration}</p>
+                  ) : null}
+                  {task.repeat !== "none" ? (
+                    <p className="muted">Repeat: {formatRepeat(task.repeat)}</p>
                   ) : null}
                   {task.dueEndTime ? (
                     <p className="muted">End time {formatTime(task.dueEndTime)}</p>
@@ -2651,7 +2653,7 @@ export function App() {
               }
             >
               <div className="panel-header">
-                <h2 id="add-task">Add Task</h2>
+                <h2 id="add-task">Create Task</h2>
                 <button type="button" onClick={closeAddTask}>
                   Cancel
                 </button>
@@ -2673,24 +2675,7 @@ export function App() {
                 </label>
 
                 <label>
-                  <span>Importance</span>
-                  <select
-                    value={draft.importance}
-                    onChange={(event) =>
-                      setDraft({
-                        ...draft,
-                        importance: event.target.value as TaskImportance,
-                      })
-                    }
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Due</span>
+                  <span>Due date</span>
                   <div className="date-control">
                     <input
                       ref={draftDueDateRef}
@@ -2698,7 +2683,17 @@ export function App() {
                       max={getMaxDueDateInputValue()}
                       value={draft.dueDate}
                       onChange={(event) => {
-                        setDraft({ ...draft, dueDate: event.target.value });
+                        const nextDueDate = event.target.value;
+                        setDraft({
+                          ...draft,
+                          dueDate: nextDueDate,
+                          dueTime: nextDueDate ? draft.dueTime : "",
+                          dueEndTime: nextDueDate ? draft.dueEndTime : "",
+                          durationMinutes: nextDueDate ? draft.durationMinutes : null,
+                        });
+                        if (!nextDueDate) {
+                          setIsDraftSpecificTimeEnabled(false);
+                        }
                         event.currentTarget.blur();
                       }}
                     />
@@ -2713,33 +2708,28 @@ export function App() {
                 </label>
 
                 <label>
-                  <span>Start time</span>
-                  {renderTimeSelect(draft.dueTime, (nextValue) =>
-                    setDraft(updateDraftStartTime(draft, nextValue)),
-                    "No start time",
-                  )}
-                </label>
-
-                <label>
-                  <span>End time</span>
-                  {renderTimeSelect(draft.dueEndTime, (nextValue) =>
-                    setDraft(updateDraftEndTime(draft, nextValue)),
-                    "No end time",
-                  )}
-                </label>
-
-                <label>
-                  <span>Actual duration</span>
-                  {renderDurationControl(draft.durationMinutes, (nextValue) =>
-                    setDraft(updateDraftDuration(draft, nextValue)),
-                  )}
-                </label>
-
-                <label>
-                  <span>Duration estimate</span>
+                  <span>Effort size</span>
                   {renderEstimateControl(draft.estimatedDuration, (nextValue) =>
                     setDraft({ ...draft, estimatedDuration: nextValue }),
+                    "No effort size",
                   )}
+                </label>
+
+                <label>
+                  <span>Importance</span>
+                  <select
+                    value={draft.importance}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        importance: event.target.value as TaskImportance,
+                      })
+                    }
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Normal</option>
+                    <option value="high">High</option>
+                  </select>
                 </label>
 
                 <label>
@@ -2760,63 +2750,12 @@ export function App() {
                     <option value={14}>2 weeks</option>
                   </select>
                 </label>
-
-                <label>
-                  <span>Repeat</span>
-                  <select
-                    value={draft.repeat}
-                    onChange={(event) =>
-                      setDraft({
-                        ...draft,
-                        repeat: event.target.value as TaskRepeat,
-                      })
-                    }
-                  >
-                    <option value="none">No repeat</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Marker style</span>
-                  <select
-                    value={draft.flagType}
-                    onChange={(event) =>
-                      setDraft({
-                        ...draft,
-                        flagType: isTaskFlagType(event.target.value)
-                          ? event.target.value
-                          : "red_flag",
-                      })
-                    }
-                  >
-                    {flagTypeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="toggle-row">
-                  <span>Keep visible</span>
-                  <input
-                    type="checkbox"
-                    checked={draft.flagged}
-                    onChange={(event) =>
-                      setDraft({ ...draft, flagged: event.target.checked })
-                    }
-                  />
-                </label>
-                <p className="field-help">For important tasks without a hard deadline.</p>
+                <p className="field-help">Used when a due date is set.</p>
 
                 <details className="details-entry">
-                  <summary>Details</summary>
+                  <summary>Notes &amp; details</summary>
                   <label>
-                    <span>Important info</span>
+                    <span>Notes</span>
                     <textarea
                       spellCheck
                       autoCorrect="on"
@@ -2829,6 +2768,98 @@ export function App() {
                       rows={3}
                     />
                   </label>
+
+                  <label>
+                    <span>Repeat</span>
+                    <select
+                      value={draft.repeat}
+                      onChange={(event) =>
+                        setDraft({
+                          ...draft,
+                          repeat: event.target.value as TaskRepeat,
+                        })
+                      }
+                    >
+                      <option value="none">No repeat</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </label>
+
+                  <label className="toggle-row">
+                    <span>Keep visible</span>
+                    <input
+                      type="checkbox"
+                      checked={draft.flagged}
+                      onChange={(event) =>
+                        setDraft({
+                          ...draft,
+                          flagged: event.target.checked,
+                          flagType: event.target.checked ? draft.flagType : "red_flag",
+                        })
+                      }
+                    />
+                  </label>
+                  <p className="field-help">For important tasks without a hard deadline.</p>
+
+                  {draft.flagged ? (
+                    <label>
+                      <span>Marker style</span>
+                      <select
+                        value={draft.flagType}
+                        onChange={(event) =>
+                          setDraft({
+                            ...draft,
+                            flagType: isTaskFlagType(event.target.value)
+                              ? event.target.value
+                              : "red_flag",
+                          })
+                        }
+                      >
+                        {flagTypeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+
+                  {draft.dueDate ? (
+                    <>
+                      <label className="toggle-row">
+                        <span>Specific time</span>
+                        <input
+                          type="checkbox"
+                          checked={isDraftSpecificTimeEnabled}
+                          onChange={(event) => {
+                            setIsDraftSpecificTimeEnabled(event.target.checked);
+                            if (!event.target.checked) {
+                              setDraft({
+                                ...draft,
+                                dueTime: "",
+                                dueEndTime: "",
+                                durationMinutes: null,
+                              });
+                            }
+                          }}
+                        />
+                      </label>
+                      {isDraftSpecificTimeEnabled ? (
+                        <label>
+                          <span>Specific time</span>
+                          {renderTimeSelect(draft.dueTime, (nextValue) =>
+                            setDraft(updateDraftStartTime(draft, nextValue)),
+                            "No specific time",
+                          )}
+                        </label>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="field-help">Add a due date to attach a time.</p>
+                  )}
                 </details>
 
                 <button type="submit">Create task</button>

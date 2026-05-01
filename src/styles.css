@@ -26,6 +26,7 @@
   --info: #0098b8;
   --info-bg: #dff6fb;
   --danger: #d52323;
+  --chip-bg: #111411;
   --shadow: rgba(23, 23, 18, 0.08);
   --overlay: rgba(23, 23, 18, 0.34);
   --drop-marker: #c8cbc3;
@@ -547,7 +548,7 @@ h3 {
 }
 
 .grip-sample {
-  background: #171712;
+  background: var(--chip-bg);
   color: #ffffff;
 }
 
@@ -561,7 +562,7 @@ h3 {
   width: auto;
   min-width: 2.15rem;
   border-radius: 999px;
-  background: #171712;
+  background: var(--chip-bg);
   color: var(--warn);
   padding-inline: 0.45rem;
 }
@@ -872,7 +873,7 @@ h3 {
   border: 2px solid color-mix(in srgb, currentColor 42%, transparent);
   border-radius: 10px;
   background: color-mix(in srgb, var(--surface) 10%, transparent);
-  color: color-mix(in srgb, var(--surface) 54%, #171712);
+  color: color-mix(in srgb, var(--surface) 54%, var(--chip-bg));
   font-size: 0.9rem;
   font-weight: 900;
   line-height: 1;
@@ -904,6 +905,15 @@ h3 {
   vertical-align: -0.1rem;
 }
 
+.title-status-pill {
+  min-height: 1.45rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  padding: 0.1rem 0.42rem;
+}
+
 .title-status-due {
   color: var(--bad);
   font-weight: 900;
@@ -917,7 +927,7 @@ h3 {
 }
 
 .title-status-overdue::after {
-  color: #171712;
+  color: var(--chip-bg);
   content: "!";
   font-size: 0.68rem;
   font-weight: 900;
@@ -963,7 +973,7 @@ h3 {
   justify-content: center;
   border-radius: 999px;
   padding: 0.1rem 0.34rem;
-  background: #171712;
+  background: var(--chip-bg);
   color: #ffffff;
   font-weight: 800;
   line-height: 1;
@@ -971,9 +981,8 @@ h3 {
 }
 
 .importance-token {
-  width: 1.35rem;
   min-width: 1.35rem;
-  padding-inline: 0;
+  padding-inline: 0.45rem;
 }
 
 .importance-token.low {
@@ -989,7 +998,7 @@ h3 {
 }
 
 .urgency {
-  background: #171712;
+  background: var(--chip-bg);
   color: var(--task-normal);
 }
 
@@ -1033,7 +1042,7 @@ h3 {
 .overdue-icon::after {
   position: absolute;
   inset: 0.16rem 0 0;
-  color: #171712;
+  color: var(--chip-bg);
   content: "!";
   font-size: 0.68rem;
   font-weight: 900;
@@ -1086,7 +1095,7 @@ h3 {
 
 .task-move-actions button {
   width: 34px;
-  background: #171712;
+  background: var(--chip-bg);
   color: #ffffff;
 }
 
@@ -1102,7 +1111,7 @@ h3 {
 
 .restore-action {
   background: var(--warn);
-  color: #171712;
+  color: var(--chip-bg);
 }
 
 .restore-action {
@@ -1128,7 +1137,7 @@ h3 {
 }
 
 .grip-action {
-  background: #171712;
+  background: var(--chip-bg);
   color: #ffffff;
   cursor: grab;
   touch-action: none;
@@ -1247,7 +1256,7 @@ h3 {
   border: 1px dashed var(--warn);
   border-radius: 10px;
   background: var(--warn-bg);
-  color: #171712;
+  color: var(--chip-bg);
   font-size: 0.88rem;
   line-height: 1.35;
   padding: 0.65rem;

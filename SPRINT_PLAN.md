@@ -391,3 +391,21 @@ Goal: Polish tile reading order and make repeat tasks respect the intended due d
 - Repeat tasks from their existing due date when present, not from the completion date.
 - Clarify that URL/domain changes are handled in Vercel, not app code.
 - Run a production build.
+
+## Sprint 25: Create Task Simplification And Tile Pills
+
+Goal: Simplify task creation for first-time users while keeping tile metadata clearer.
+
+## Planned Scope
+
+- Show full text importance pills on tiles.
+- Remove repeat labels from tiles and show `Repeat: x` in task info instead.
+- Keep first-load/default saturation at 90%.
+- Put due and overdue title indicators inside dark charcoal pills.
+- Use dark charcoal instead of pure black for data chips.
+- Show a red urgent pill for tasks due today.
+- Simplify the default Create Task panel to Task, Due date, Effort size, Importance, and Urgent before.
+- Move notes, repeat, keep visible, marker style, and specific time into collapsed `Notes & details`.
+- Keep Edit Task full-featured.
+- Ensure due time and effort size do not affect sorting.
+- Run a production build.

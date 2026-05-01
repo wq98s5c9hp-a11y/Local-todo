@@ -691,3 +691,32 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 25 Approval
+
+- CEO requested importance pills return to full text.
+- CEO requested repeat interval move off tiles and into info as `Repeat: x`.
+- CEO reported mobile may still load at 0% saturation and requested 90%.
+- CEO requested due/overdue indicators use the same dark pill style as other data chips.
+- CEO requested black pills become very dark charcoal.
+- CEO requested due tasks also show a red urgent pill in the normal urgency pill area.
+- CEO requested the Create Task panel be simplified per the supplied implementation brief.
+
+### Sprint 25 Implementation Changes
+
+- Changed tile importance labels to full `Low`, `Normal`, and `High` text.
+- Removed repeat labels from the tile face and added `Repeat: x` inside expanded task info.
+- Treated saved `0` saturation like missing saturation on load so the app starts at 90%.
+- Moved due and overdue title indicators into dark charcoal pills.
+- Introduced a charcoal chip colour for tile data/action chips.
+- Added a red `Urgent` pill for tasks due today.
+- Simplified Create Task visible fields to Task, Due date, Effort size, Importance, and Urgent before.
+- Moved Notes, Repeat, Keep visible, Marker style, and Specific time into collapsed `Notes & details`.
+- Marker style only appears when Keep visible is on.
+- Specific time only appears when a due date is set and Specific time is enabled.
+- Removed due-time scoring from sorting; due time is now reference metadata only.
+
+### Sprint 25 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.
