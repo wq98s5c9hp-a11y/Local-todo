@@ -511,3 +511,29 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 18 Approval
+
+- CEO requested mobile tile sizing be reduced so edges are not clipped.
+- CEO requested the default theme start on Earth Workspace at 75% saturation.
+- CEO requested light mode use a very light tan background and dark mode use a very dark charcoal rather than pure white/black.
+- CEO requested visible tile border colours be removed.
+- CEO requested smaller pill text and sizing so long due-date rows such as `364d Apr 30` stay on one line.
+- CEO requested Neon Modern and Apple Clean be replaced by Mustard Cinema, Acid Terminal, and Tonal Contemporary.
+
+### Sprint 18 Implementation Changes
+
+- Changed default colour scheme fallback to Earth Workspace.
+- Changed default saturation fallback to 75%.
+- Migrated old saved `neon` settings to Acid Terminal and `apple` settings to Tonal Contemporary.
+- Updated colour scheme union/options to six schemes: CMYK Pop, Storybook Muted, Earth Workspace, Mustard Cinema, Acid Terminal, and Tonal Contemporary.
+- Removed Neon Modern and Apple Clean CSS theme blocks.
+- Added Mustard Cinema, Acid Terminal, and Tonal Contemporary light/dark CSS theme blocks.
+- Removed visible task tile borders.
+- Tightened mobile app width, grid gap, and tile sizing.
+- Reduced chip text/padding and prevented date chip wrapping.
+
+### Sprint 18 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 17 executed
+Status: Sprint 18 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -281,3 +281,20 @@ Goal: Add palette customization and make signed-in task sync update across brows
 - Added Supabase Realtime subscription for live task updates where Realtime is enabled.
 - Made synced signed-in reloads use the cloud task list as source of truth to avoid stale browser data resurrecting old tasks.
 - Changed drag placement feedback to a neutral between-tile marker instead of a yellow tile highlight.
+
+## Sprint 18: Theme Defaults And Palette Replacement
+
+Goal: Make mobile tiles fit cleanly and replace the less distinct colour schemes with stronger palette options.
+
+## Completed Scope
+
+- Default colour scheme changed to Earth Workspace.
+- Default saturation changed to 75%.
+- Old saved `neon` settings migrate to Acid Terminal.
+- Old saved `apple` settings migrate to Tonal Contemporary.
+- Replaced Neon Modern and Apple Clean with Mustard Cinema, Acid Terminal, and Tonal Contemporary.
+- Kept CMYK Pop, Storybook Muted, and Earth Workspace.
+- Adjusted light/dark backgrounds away from pure white/black.
+- Removed visible tile borders.
+- Tightened mobile tile sizing so two tiles fit with extra breathing room.
+- Reduced pill text/padding and kept date chips on one row.

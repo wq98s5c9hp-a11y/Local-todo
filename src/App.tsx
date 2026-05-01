@@ -13,7 +13,13 @@ import { supabase } from "./supabase";
 type TaskImportance = "low" | "medium" | "high";
 type TaskRepeat = "none" | "daily" | "weekly" | "monthly" | "yearly";
 type EstimateUnit = "minutes" | "hours" | "days" | "weeks";
-type ColorScheme = "cmyk" | "storybook" | "earth" | "neon" | "apple";
+type ColorScheme =
+  | "cmyk"
+  | "storybook"
+  | "earth"
+  | "mustard"
+  | "acid"
+  | "tonal";
 type DropPlacement = {
   taskId: string;
   placement: "before" | "after";
@@ -98,8 +104,9 @@ const colorSchemeOptions: Array<{ value: ColorScheme; label: string }> = [
   { value: "cmyk", label: "CMYK Pop" },
   { value: "storybook", label: "Storybook Muted" },
   { value: "earth", label: "Earth Workspace" },
-  { value: "neon", label: "Neon Modern" },
-  { value: "apple", label: "Apple Clean" },
+  { value: "mustard", label: "Mustard Cinema" },
+  { value: "acid", label: "Acid Terminal" },
+  { value: "tonal", label: "Tonal Contemporary" },
 ];
 
 function createId() {
@@ -138,8 +145,9 @@ function isColorScheme(value: unknown): value is ColorScheme {
     value === "cmyk" ||
     value === "storybook" ||
     value === "earth" ||
-    value === "neon" ||
-    value === "apple"
+    value === "mustard" ||
+    value === "acid" ||
+    value === "tonal"
   );
 }
 
@@ -244,14 +252,22 @@ function loadDarkMode() {
 function loadColorScheme(): ColorScheme {
   const savedScheme = window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY);
 
-  return isColorScheme(savedScheme) ? savedScheme : "cmyk";
+  if (savedScheme === "neon") {
+    return "acid";
+  }
+
+  if (savedScheme === "apple") {
+    return "tonal";
+  }
+
+  return isColorScheme(savedScheme) ? savedScheme : "earth";
 }
 
 function loadSaturation() {
   const savedSaturation = Number(window.localStorage.getItem(SATURATION_STORAGE_KEY));
 
   if (!Number.isFinite(savedSaturation)) {
-    return 100;
+    return 75;
   }
 
   return Math.max(0, Math.min(100, Math.round(savedSaturation)));
