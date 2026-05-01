@@ -13,6 +13,13 @@ import { supabase } from "./supabase";
 type TaskImportance = "low" | "medium" | "high";
 type TaskRepeat = "none" | "daily" | "weekly" | "monthly" | "yearly";
 type EstimateUnit = "minutes" | "hours" | "days" | "weeks";
+type TaskFlagType =
+  | "red_flag"
+  | "green_flag"
+  | "red_circle"
+  | "green_circle"
+  | "red_x"
+  | "green_x";
 type ColorScheme =
   | "cmyk"
   | "storybook"
@@ -31,10 +38,13 @@ type Task = {
   importance: TaskImportance;
   estimatedDuration: string;
   dueDate: string;
+  dueTime: string;
   urgentBeforeDays: number;
   sortOrder: number | null;
   details: string;
   repeat: TaskRepeat;
+  flagged: boolean;
+  flagType: TaskFlagType;
   completed: boolean;
   createdAt: string;
   updatedAt: string;
@@ -46,9 +56,12 @@ type TaskDraft = {
   importance: TaskImportance;
   estimatedDuration: string;
   dueDate: string;
+  dueTime: string;
   urgentBeforeDays: number;
   details: string;
   repeat: TaskRepeat;
+  flagged: boolean;
+  flagType: TaskFlagType;
 };
 
 type StoredTask = Partial<Task> & {
@@ -62,10 +75,13 @@ type TaskRow = {
   importance: TaskImportance;
   estimated_duration: string;
   due_date: string | null;
+  due_time: string | null;
   urgent_before_days: number;
   sort_order: number | null;
   details: string;
   repeat: TaskRepeat;
+  flagged: boolean;
+  flag_type: TaskFlagType;
   completed: boolean;
   created_at: string;
   updated_at: string;
@@ -88,9 +104,12 @@ const emptyDraft: TaskDraft = {
   importance: "medium",
   estimatedDuration: "minutes",
   dueDate: "",
+  dueTime: "",
   urgentBeforeDays: 1,
   details: "",
   repeat: "none",
+  flagged: false,
+  flagType: "red_flag",
 };
 
 const importanceWeight: Record<TaskImportance, number> = {
@@ -100,6 +119,14 @@ const importanceWeight: Record<TaskImportance, number> = {
 };
 
 const estimateUnits: EstimateUnit[] = ["minutes", "hours", "days", "weeks"];
+const flagTypeOptions: Array<{ value: TaskFlagType; label: string }> = [
+  { value: "red_flag", label: "Red flag" },
+  { value: "green_flag", label: "Green flag" },
+  { value: "red_circle", label: "Red circle" },
+  { value: "green_circle", label: "Green circle" },
+  { value: "red_x", label: "Red X" },
+  { value: "green_x", label: "Green X" },
+];
 const colorSchemeOptions: Array<{ value: ColorScheme; label: string }> = [
   { value: "cmyk", label: "CMYK Pop" },
   { value: "storybook", label: "Storybook Muted" },
@@ -137,6 +164,17 @@ function isEstimateUnit(value: unknown): value is EstimateUnit {
     value === "hours" ||
     value === "days" ||
     value === "weeks"
+  );
+}
+
+function isTaskFlagType(value: unknown): value is TaskFlagType {
+  return (
+    value === "red_flag" ||
+    value === "green_flag" ||
+    value === "red_circle" ||
+    value === "green_circle" ||
+    value === "red_x" ||
+    value === "green_x"
   );
 }
 
@@ -205,10 +243,13 @@ function normalizeTask(value: unknown): Task | null {
     estimatedDuration:
       typeof task.estimatedDuration === "string" ? task.estimatedDuration : "",
     dueDate: typeof task.dueDate === "string" ? normalizeDueDate(task.dueDate) : "",
+    dueTime: typeof task.dueTime === "string" ? task.dueTime : "",
     urgentBeforeDays: normalizeUrgentBeforeDays(task.urgentBeforeDays),
     sortOrder: normalizeSortOrder(task.sortOrder),
     details: typeof task.details === "string" ? task.details : "",
     repeat: isTaskRepeat(task.repeat) ? task.repeat : "none",
+    flagged: typeof task.flagged === "boolean" ? task.flagged : false,
+    flagType: isTaskFlagType(task.flagType) ? task.flagType : "red_flag",
     completed: task.completed,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
@@ -540,6 +581,45 @@ function formatDate(value?: string) {
   }).format(date);
 }
 
+function formatTime(value: string) {
+  if (!value) {
+    return "";
+  }
+
+  const [hours, minutes] = value.split(":").map(Number);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return value;
+  }
+
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+
+  return new Intl.DateTimeFormat(undefined, {
+    timeStyle: "short",
+  }).format(date);
+}
+
+function getFlagIcon(flagType: TaskFlagType) {
+  switch (flagType) {
+    case "green_flag":
+    case "red_flag":
+      return "⚑";
+    case "green_circle":
+    case "red_circle":
+      return "●";
+    case "green_x":
+    case "red_x":
+      return "×";
+    default:
+      return "⚑";
+  }
+}
+
+function getFlagTone(flagType: TaskFlagType) {
+  return flagType.startsWith("green") ? "green" : "red";
+}
+
 function createTaskFromDraft(draft: TaskDraft): Task {
   const now = new Date().toISOString();
 
@@ -549,10 +629,13 @@ function createTaskFromDraft(draft: TaskDraft): Task {
     importance: draft.importance,
     estimatedDuration: draft.estimatedDuration.trim(),
     dueDate: normalizeDueDate(draft.dueDate),
+    dueTime: draft.dueTime,
     urgentBeforeDays: draft.urgentBeforeDays,
     sortOrder: 0,
     details: draft.details.trim(),
     repeat: draft.repeat,
+    flagged: draft.flagged,
+    flagType: draft.flagType,
     completed: false,
     createdAt: now,
     updatedAt: now,
@@ -623,10 +706,13 @@ function toTaskRow(task: Task, userId: string): TaskRow {
     importance: task.importance,
     estimated_duration: task.estimatedDuration,
     due_date: task.dueDate || null,
+    due_time: task.dueTime || null,
     urgent_before_days: task.urgentBeforeDays,
     sort_order: task.sortOrder,
     details: task.details,
     repeat: task.repeat,
+    flagged: task.flagged,
+    flag_type: task.flagType,
     completed: task.completed,
     created_at: task.createdAt,
     updated_at: task.updatedAt,
@@ -641,10 +727,13 @@ function fromTaskRow(row: TaskRow): Task {
     importance: row.importance,
     estimatedDuration: row.estimated_duration,
     dueDate: normalizeDueDate(row.due_date || ""),
+    dueTime: row.due_time || "",
     urgentBeforeDays: row.urgent_before_days,
     sortOrder: normalizeSortOrder(row.sort_order),
     details: row.details,
     repeat: isTaskRepeat(row.repeat) ? row.repeat : "none",
+    flagged: row.flagged ?? false,
+    flagType: isTaskFlagType(row.flag_type) ? row.flag_type : "red_flag",
     completed: row.completed,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -1057,10 +1146,14 @@ export function App() {
       importance: task.importance,
       estimatedDuration: task.estimatedDuration,
       dueDate: task.dueDate,
+      dueTime: task.dueTime,
       urgentBeforeDays: task.urgentBeforeDays,
       details: task.details,
       repeat: task.repeat,
+      flagged: task.flagged,
+      flagType: task.flagType,
     });
+    setExpandedTaskIds(new Set());
   }
 
   function cancelEditing() {
@@ -1084,9 +1177,12 @@ export function App() {
               importance: editingDraft.importance,
               estimatedDuration: editingDraft.estimatedDuration.trim(),
               dueDate: normalizeDueDate(editingDraft.dueDate),
+              dueTime: editingDraft.dueTime,
               urgentBeforeDays: editingDraft.urgentBeforeDays,
               details: editingDraft.details.trim(),
               repeat: editingDraft.repeat,
+              flagged: editingDraft.flagged,
+              flagType: editingDraft.flagType,
               updatedAt: new Date().toISOString(),
             }
           : task,
@@ -1157,6 +1253,20 @@ export function App() {
               completedAt: undefined,
               sortOrder: 0,
               updatedAt: now,
+            }
+          : task,
+      ),
+    );
+  }
+
+  function toggleTaskFlag(taskId: string) {
+    persistTasks(
+      tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              flagged: !task.flagged,
+              updatedAt: new Date().toISOString(),
             }
           : task,
       ),
@@ -1315,15 +1425,7 @@ export function App() {
 
   function toggleTaskDetails(taskId: string) {
     setExpandedTaskIds((currentIds) => {
-      const nextIds = new Set(currentIds);
-
-      if (nextIds.has(taskId)) {
-        nextIds.delete(taskId);
-      } else {
-        nextIds.add(taskId);
-      }
-
-      return nextIds;
+      return currentIds.has(taskId) ? new Set() : new Set([taskId]);
     });
   }
 
@@ -1406,14 +1508,19 @@ export function App() {
     );
   }
 
+  function isHighlightedTask(task: Task, activeIndex: number) {
+    const daysUntilDue = getDaysUntilDue(task.dueDate);
+
+    return activeIndex < 4 || (daysUntilDue !== null && daysUntilDue <= 1);
+  }
+
   function renderTask(task: Task, isFeatured = false, activeIndex: number | null = null) {
     const isEditing = editingTaskId === task.id;
     const isExpanded = expandedTaskIds.has(task.id);
     const urgencyLabel = getUrgencyLabel(task);
     const dueDateParts = getDueDateParts(task.dueDate);
     const dueDaysChip = getDueDaysChip(task);
-    const canMoveUp = activeIndex !== null && activeIndex > 0;
-    const canMoveDown = activeIndex !== null && activeIndex < activeTasks.length - 1;
+    const flagTone = getFlagTone(task.flagType);
 
     return (
       <article
@@ -1440,26 +1547,21 @@ export function App() {
           } as CSSProperties
         }
       >
-        {activeIndex !== null ? (
-          <div className="task-move-actions" aria-label="Move task">
-            <button
-              type="button"
-              aria-label="Move task up"
-              disabled={!canMoveUp}
-              onClick={() => moveActiveTask(task.id, "up")}
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              aria-label="Move task down"
-              disabled={!canMoveDown}
-              onClick={() => moveActiveTask(task.id, "down")}
-            >
-              ↓
-            </button>
-          </div>
-        ) : null}
+        <button
+          className={[
+            "flag-toggle",
+            task.flagged ? "is-flagged" : "",
+            `flag-${flagTone}`,
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          type="button"
+          aria-label={task.flagged ? "Unflag task" : "Flag task"}
+          title={task.flagged ? "Unflag" : "Flag"}
+          onClick={() => toggleTaskFlag(task.id)}
+        >
+          {getFlagIcon(task.flagType)}
+        </button>
         {isEditing ? (
           <form
             className="task-edit-form"
@@ -1538,6 +1640,20 @@ export function App() {
             </label>
 
             <label>
+              <span>Due time</span>
+              <input
+                type="time"
+                value={editingDraft.dueTime}
+                onChange={(event) =>
+                  setEditingDraft({
+                    ...editingDraft,
+                    dueTime: event.target.value,
+                  })
+                }
+              />
+            </label>
+
+            <label>
               <span>Urgent before</span>
               <select
                 value={editingDraft.urgentBeforeDays}
@@ -1575,6 +1691,41 @@ export function App() {
               </select>
             </label>
 
+            <label>
+              <span>Flag type</span>
+              <select
+                value={editingDraft.flagType}
+                onChange={(event) =>
+                  setEditingDraft({
+                    ...editingDraft,
+                    flagType: isTaskFlagType(event.target.value)
+                      ? event.target.value
+                      : "red_flag",
+                  })
+                }
+              >
+                {flagTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="toggle-row">
+              <span>Flagged</span>
+              <input
+                type="checkbox"
+                checked={editingDraft.flagged}
+                onChange={(event) =>
+                  setEditingDraft({
+                    ...editingDraft,
+                    flagged: event.target.checked,
+                  })
+                }
+              />
+            </label>
+
             <label className="full-field">
               <span>Details</span>
               <textarea
@@ -1609,7 +1760,14 @@ export function App() {
           </form>
         ) : (
           <>
-            <div className="task-main">
+            <div
+              className="task-main"
+              onClick={() => {
+                if (expandedTaskIds.size && !isExpanded) {
+                  setExpandedTaskIds(new Set());
+                }
+              }}
+            >
               <p className={task.completed ? "task-title completed" : "task-title"}>
                 {task.title}
               </p>
@@ -1669,6 +1827,9 @@ export function App() {
                       Becomes urgent {task.urgentBeforeDays} day
                       {task.urgentBeforeDays === 1 ? "" : "s"} before due date.
                     </p>
+                  ) : null}
+                  {task.dueTime ? (
+                    <p className="muted">Due time {formatTime(task.dueTime)}</p>
                   ) : null}
                   {task.completedAt ? (
                     <p className="muted">Completed {formatDate(task.completedAt)}</p>
@@ -2005,6 +2166,17 @@ export function App() {
                 </label>
 
                 <label>
+                  <span>Due time</span>
+                  <input
+                    type="time"
+                    value={draft.dueTime}
+                    onChange={(event) =>
+                      setDraft({ ...draft, dueTime: event.target.value })
+                    }
+                  />
+                </label>
+
+                <label>
                   <span>Urgent before</span>
                   <select
                     value={draft.urgentBeforeDays}
@@ -2040,6 +2212,38 @@ export function App() {
                     <option value="monthly">Monthly</option>
                     <option value="yearly">Yearly</option>
                   </select>
+                </label>
+
+                <label>
+                  <span>Flag type</span>
+                  <select
+                    value={draft.flagType}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        flagType: isTaskFlagType(event.target.value)
+                          ? event.target.value
+                          : "red_flag",
+                      })
+                    }
+                  >
+                    {flagTypeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="toggle-row">
+                  <span>Flagged</span>
+                  <input
+                    type="checkbox"
+                    checked={draft.flagged}
+                    onChange={(event) =>
+                      setDraft({ ...draft, flagged: event.target.checked })
+                    }
+                  />
                 </label>
 
                 <details className="details-entry">
@@ -2092,7 +2296,9 @@ export function App() {
             </button>
           )}
 
-          {activeTasks.map((task, index) => renderTask(task, index < 4, index))}
+          {activeTasks.map((task, index) =>
+            renderTask(task, isHighlightedTask(task, index), index),
+          )}
         </div>
 
         {!activeTasks.length ? (

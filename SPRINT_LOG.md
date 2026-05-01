@@ -564,3 +564,31 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 20 Approval
+
+- CEO requested removing up/down arrows because drag is enough.
+- CEO requested a direct tile flag toggle in the upper-right corner.
+- CEO requested flag type options in add/edit: red flag, green flag, red circle, green circle, red X, and green X.
+- CEO requested mobile info panels span two tile widths and previous info panels collapse when another is opened.
+- CEO requested highlighted tasks include a minimum of four plus all tasks due today or tomorrow.
+- CEO requested due date time capture, shown in info only.
+- CEO requested multi-select/multi-delete, worked-on points, and future money-pot accountability ideas be added to the roadmap.
+
+### Sprint 20 Implementation Changes
+
+- Removed rendered up/down movement controls from task tiles.
+- Added persistent `flagged`, `flagType`, and `dueTime` task fields.
+- Added an upper-right flag toggle with inactive light grey and active red/green tone.
+- Added due-time fields to add/edit forms and due-time display inside expanded info.
+- Added flag type and flagged controls to add/edit forms.
+- Changed info toggling to keep only one expanded info panel open at a time.
+- Added a click-on-another-tile-content collapse behavior for open info panels.
+- Updated highlight logic to include top four tasks plus any task due today, tomorrow, or overdue.
+- Added Supabase schema/migration updates for due time and flags.
+- Added requested roadmap-only future ideas.
+
+### Sprint 20 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

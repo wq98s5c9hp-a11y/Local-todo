@@ -710,6 +710,34 @@ h3 {
   overflow: hidden;
 }
 
+.flag-toggle {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 1;
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  place-items: center;
+  border: 0;
+  border-radius: 14px;
+  background: #171712;
+  color: #d8d9d4;
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0;
+}
+
+.flag-toggle.is-flagged.flag-red {
+  color: var(--bad);
+}
+
+.flag-toggle.is-flagged.flag-green {
+  color: var(--good);
+}
+
 .task-title {
   color: inherit;
   font-size: 0.98rem;
@@ -1152,7 +1180,8 @@ h3 {
   }
 
   .task.add-panel,
-  .task.task-editing {
+  .task.task-editing,
+  .task.task-info-open {
     grid-column: 1 / -1;
     width: min(
       calc((var(--task-tile-size) * 2) + 0.5rem),

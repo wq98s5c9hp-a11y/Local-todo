@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 19 executed
+Status: Sprint 20 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -313,3 +313,18 @@ Goal: Make the brand/UI naming consistent and make mobile tile spacing reliable 
 - Fixed dark-mode mobile tile sizing by overriding the tile-size variable at matching specificity.
 - Set default saturation to 90%.
 - Added future sort controls to the roadmap without implementing them.
+
+## Sprint 20: Flags, Due Time, And Highlight Rules
+
+Goal: Add lightweight task flags and due-time capture while simplifying tile controls.
+
+## Completed Scope
+
+- Removed up/down arrow controls from active task tiles.
+- Added an upper-right flag toggle on each tile.
+- Added flag type choices to add/edit: red flag, green flag, red circle, green circle, red X, and green X.
+- Added due time to add/edit and showed it only inside the expanded info area.
+- Made info expansion singleton-style so opening another info panel collapses the previous one.
+- Kept at least the top 4 tasks highlighted, and also highlighted every task due today or tomorrow.
+- Added multi-select/multi-delete, worked-on points, and far-future money-pot ideas to the roadmap only.
+- Added a Supabase migration for flag and due-time columns.
