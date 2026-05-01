@@ -361,3 +361,19 @@ Goal: Make the task form language clearer, add first-user help, and make account
 - Add a How to use tab with button/function explanations.
 - Add an Info tab describing Tile Todo and its sorting behavior.
 - Run a production build.
+
+## Sprint 23: Friend Testing Data Safety
+
+Goal: Make Tile Todo safer to send to friends by preventing account data bleed, clarifying local mode, and polishing empty/move edge states.
+
+## Planned Scope
+
+- Add long-term roadmap items for authenticated AI task access and custom colour pickers.
+- Show a temporary overlay when a dragged tile cannot actually move because its priority/due score keeps it in place.
+- Convert empty active/archive messages into tile-shaped dotted placeholders.
+- Add a clear-local-tasks option in local mode.
+- Warn users that local mode does not sync or protect tasks across devices.
+- Clear the visible task list on logout so another account/person does not inherit browser-local data.
+- Load signed-in accounts from that account's cloud task list instead of merging browser-local tasks into every account.
+- Keep default saturation at 90%.
+- Run a production build and review data isolation behavior.

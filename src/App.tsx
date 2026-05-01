@@ -101,6 +101,7 @@ const THEME_STORAGE_KEY = "local-first-todo.theme";
 const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
 const SATURATION_STORAGE_KEY = "local-first-todo.saturation";
 const SYNCED_USER_STORAGE_KEY = "local-first-todo.synced-user";
+const MOVE_BLOCKED_ALERT_MS = 5000;
 const BACKUP_VERSION = 1;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_DUE_DAYS = 365;
@@ -425,7 +426,13 @@ function loadColorScheme(): ColorScheme {
 }
 
 function loadSaturation() {
-  const savedSaturation = Number(window.localStorage.getItem(SATURATION_STORAGE_KEY));
+  const rawSaturation = window.localStorage.getItem(SATURATION_STORAGE_KEY);
+
+  if (rawSaturation === null) {
+    return 90;
+  }
+
+  const savedSaturation = Number(rawSaturation);
 
   if (!Number.isFinite(savedSaturation)) {
     return 90;
@@ -986,6 +993,25 @@ function mergeTasks(localTasks: Task[], cloudTasks: Task[]) {
   return Array.from(taskById.values());
 }
 
+function sortActiveTasks(taskList: Task[]) {
+  const sortedTasks = taskList
+    .filter((task) => !task.completed)
+    .sort((firstTask, secondTask) => {
+      const scoreDifference = getTaskScore(secondTask) - getTaskScore(firstTask);
+
+      if (scoreDifference !== 0) {
+        return scoreDifference;
+      }
+
+      return (
+        new Date(secondTask.createdAt).getTime() -
+        new Date(firstTask.createdAt).getTime()
+      );
+    });
+
+  return rebalanceVisibleFlaggedTasks(sortedTasks);
+}
+
 export function App() {
   const [tasks, setTasks] = useState<Task[]>(() => loadTasks());
   const [draft, setDraft] = useState<TaskDraft>(emptyDraft);
@@ -1015,8 +1041,10 @@ export function App() {
   const [saturation, setSaturation] = useState(() => loadSaturation());
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null);
+  const [blockedMoveTaskId, setBlockedMoveTaskId] = useState<string | null>(null);
   const loadingCloudRef = useRef(false);
   const cloudRefreshTimerRef = useRef<number | null>(null);
+  const blockedMoveTimerRef = useRef<number | null>(null);
   const completingTaskIdsRef = useRef<Set<string>>(new Set());
   const draftDueDateRef = useRef<HTMLInputElement | null>(null);
   const editingDueDateRef = useRef<HTMLInputElement | null>(null);
@@ -1029,12 +1057,24 @@ export function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setAuthLoading(false);
+
+      if (event === "SIGNED_OUT") {
+        clearLocalTasks("Signed out and cleared this browser's visible tasks.");
+      }
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (blockedMoveTimerRef.current) {
+        window.clearTimeout(blockedMoveTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -1148,27 +1188,7 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const activeTasks = useMemo(
-    () => {
-      const sortedTasks = tasks
-        .filter((task) => !task.completed)
-        .sort((firstTask, secondTask) => {
-          const scoreDifference = getTaskScore(secondTask) - getTaskScore(firstTask);
-
-          if (scoreDifference !== 0) {
-            return scoreDifference;
-          }
-
-          return (
-            new Date(secondTask.createdAt).getTime() -
-            new Date(firstTask.createdAt).getTime()
-          );
-        });
-
-      return rebalanceVisibleFlaggedTasks(sortedTasks);
-    },
-    [tasks],
-  );
+  const activeTasks = useMemo(() => sortActiveTasks(tasks), [tasks]);
 
   const completedTasks = useMemo(
     () => tasks.filter((task) => task.completed),
@@ -1238,7 +1258,7 @@ export function App() {
     }
 
     const cloudTasks = (data || []).map((row) => fromTaskRow(row as TaskRow));
-    const mergedTasks = mergeTasks(loadTasks(), cloudTasks);
+    const mergedTasks = cloudTasks;
 
     setTasks(mergedTasks);
     saveTasks(mergedTasks);
@@ -1261,6 +1281,19 @@ export function App() {
     setTasks(nextTasks);
     saveTasks(nextTasks);
     syncCloudTasks(nextTasks);
+  }
+
+  function clearLocalTasks(message = "Local tasks cleared.") {
+    setTasks([]);
+    saveTasks([]);
+    setExpandedTaskIds(new Set());
+    setEditingTaskId(null);
+    setEditingDraft(emptyDraft);
+    setIsAddTaskOpen(false);
+    setDraft(emptyDraft);
+    window.localStorage.removeItem(SYNCED_USER_STORAGE_KEY);
+    setSyncMessage("Local mode");
+    setImportMessage(message);
   }
 
   function persistTasksWithTransition(nextTasks: Task[]) {
@@ -1394,7 +1427,10 @@ export function App() {
   async function handleSignOut() {
     await supabase.auth.signOut();
     setUser(null);
-    setSyncMessage("Local mode");
+    setAuthEmail("");
+    setAuthPassword("");
+    setAuthMessage("Signed out. This browser's visible task list was cleared.");
+    clearLocalTasks("Signed out and cleared this browser's visible tasks.");
   }
 
   function handleAddTask(event: FormEvent<HTMLFormElement>) {
@@ -1533,6 +1569,21 @@ export function App() {
     );
   }
 
+  function showBlockedMoveAlert(taskId: string) {
+    setBlockedMoveTaskId(taskId);
+
+    if (blockedMoveTimerRef.current) {
+      window.clearTimeout(blockedMoveTimerRef.current);
+    }
+
+    blockedMoveTimerRef.current = window.setTimeout(() => {
+      setBlockedMoveTaskId((currentTaskId) =>
+        currentTaskId === taskId ? null : currentTaskId,
+      );
+      blockedMoveTimerRef.current = null;
+    }, MOVE_BLOCKED_ALERT_MS);
+  }
+
   function toggleTaskFlag(taskId: string) {
     persistTasks(
       tasks.map((task) =>
@@ -1619,18 +1670,25 @@ export function App() {
       orderedTasksWithoutMovedTask,
       desiredIndex,
     );
-
-    persistTasksWithTransition(
-      tasks.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              sortOrder: nextBias,
-              updatedAt: new Date().toISOString(),
-            }
-          : task,
-      ),
+    const currentIndex = activeTasks.findIndex((task) => task.id === taskId);
+    const nextTasks = tasks.map((task) =>
+      task.id === taskId
+        ? {
+            ...task,
+            sortOrder: nextBias,
+            updatedAt: new Date().toISOString(),
+          }
+        : task,
     );
+    const nextIndex = sortActiveTasks(nextTasks).findIndex(
+      (task) => task.id === taskId,
+    );
+
+    persistTasksWithTransition(nextTasks);
+
+    if (currentIndex === nextIndex && currentIndex !== desiredIndex) {
+      showBlockedMoveAlert(taskId);
+    }
   }
 
   function getDropPlacementFromPoint(
@@ -1864,7 +1922,12 @@ export function App() {
             viewTransitionName: `task-${task.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
           } as CSSProperties
         }
-      >
+        >
+        {blockedMoveTaskId === task.id ? (
+          <div className="move-blocked-alert" aria-live="polite">
+            Can't move, too important
+          </div>
+        ) : null}
         <button
           className={[
             "flag-toggle",
@@ -2392,33 +2455,54 @@ export function App() {
                       Sign out
                     </button>
                   ) : (
-                    <form className="auth-form" onSubmit={handleSignIn}>
-                      <input
-                        type="email"
-                        value={authEmail}
-                        onChange={(event) => setAuthEmail(event.target.value)}
-                        placeholder="Email"
-                        required
-                      />
-                      <input
-                        type="password"
-                        value={authPassword}
-                        onChange={(event) => setAuthPassword(event.target.value)}
-                        placeholder="Password"
-                        required
-                        minLength={6}
-                      />
-                      <button type="submit" disabled={authSubmitting}>
-                        Sign in
-                      </button>
+                    <>
+                      <p className="local-mode-warning">
+                        Local mode only. Make an account to sync between devices and
+                        keep tasks beyond this browser.
+                      </p>
+                      <form className="auth-form" onSubmit={handleSignIn}>
+                        <input
+                          type="email"
+                          value={authEmail}
+                          onChange={(event) => setAuthEmail(event.target.value)}
+                          placeholder="Email"
+                          required
+                        />
+                        <input
+                          type="password"
+                          value={authPassword}
+                          onChange={(event) => setAuthPassword(event.target.value)}
+                          placeholder="Password"
+                          required
+                          minLength={6}
+                        />
+                        <button type="submit" disabled={authSubmitting}>
+                          Sign in
+                        </button>
+                        <button
+                          type="button"
+                          disabled={authSubmitting}
+                          onClick={startCreateAccountConfirmation}
+                        >
+                          Create account
+                        </button>
+                      </form>
                       <button
+                        className="clear-local-button"
                         type="button"
-                        disabled={authSubmitting}
-                        onClick={startCreateAccountConfirmation}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              "Clear all local tasks from this browser? This cannot be undone.",
+                            )
+                          ) {
+                            clearLocalTasks();
+                          }
+                        }}
                       >
-                        Create account
+                        Clear local tasks
                       </button>
-                    </form>
+                    </>
                   )}
                 </section>
 
@@ -2792,7 +2876,9 @@ export function App() {
         </div>
 
         {!activeTasks.length ? (
-          <p className="empty-state">No active tasks yet.</p>
+          <div className="task-grid">
+            <p className="task empty-state">No active tasks yet.</p>
+          </div>
         ) : null}
       </section>
 
@@ -2803,7 +2889,9 @@ export function App() {
             {completedTasks.map((task) => renderTask(task))}
           </div>
         ) : (
-          <p className="empty-state">Completed tasks will appear here.</p>
+          <div className="task-grid">
+            <p className="task empty-state">Completed tasks will appear here.</p>
+          </div>
         )}
       </section>
     </main>

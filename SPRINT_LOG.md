@@ -643,3 +643,30 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 23 Approval
+
+- CEO requested long-term roadmap items for authenticated AI task access and custom colour pickers.
+- CEO requested a temporary `can't move, too important` overlay when drag movement cannot overcome task urgency/importance.
+- CEO requested empty active/archive states be tile-shaped instead of full-width bars.
+- CEO reported account data could remain visible after logout or appear in a new account.
+- CEO requested local mode warning copy and a clear-local-data option.
+- CEO requested a friend-testing readiness check for account isolation.
+
+### Sprint 23 Implementation Changes
+
+- Added roadmap items for authenticated AI API/task access and custom colour-scheme colour pickers.
+- Added a five-second translucent movement-blocked overlay on the dragged tile when its sorted position does not change.
+- Changed empty active and completed archive placeholders into dotted tile-sized placeholders.
+- Added local-mode warning copy in the Account Sync settings area.
+- Added a `Clear local tasks` button with confirmation when signed out.
+- Changed logout to clear the visible local task list, auth form fields, and sync marker.
+- Added the same visible-task clearing behavior for Supabase sign-out events from another tab/window.
+- Changed signed-in cloud loading to use the signed-in account's cloud task list rather than merging browser-local tasks into every account.
+- Fixed first-load saturation so missing localStorage starts at 90% instead of being interpreted as 0%.
+
+### Sprint 23 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.
+- Reviewed account loading path: signed-in accounts now load from Supabase rows for that account, while logout and local clear wipe the browser-visible task list.
