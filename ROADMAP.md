@@ -245,6 +245,20 @@ Completed features:
 - Replaced the logo with full-square 45-degree stripes alternating black, magenta, and cyan.
 - Added PNG app icons for browser and iPhone home-screen support.
 
+## Stage 17: Tile Size And Add Form Tuning
+
+Status: Complete
+
+Tune the square task interaction after CEO review.
+
+Completed features:
+
+- Increased fixed task tile size while preserving two-across mobile layout.
+- Centered and enlarged the add-task plus tile.
+- Expanded the add-task form into a larger panel.
+- Changed the add submit action to `Create task`.
+- Made task action buttons solid colors with better tile fit.
+
 ## Later Ideas
 
 These are intentionally outside version 1:

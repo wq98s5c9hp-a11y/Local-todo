@@ -25,7 +25,7 @@
   --danger: #d52323;
   --shadow: rgba(23, 23, 18, 0.08);
   --overlay: rgba(23, 23, 18, 0.34);
-  --task-tile-size: 180px;
+  --task-tile-size: 196px;
   color: var(--text);
   background: var(--bg);
   font-family:
@@ -62,7 +62,7 @@ html[data-theme="dark"] {
   --danger: #ff6b62;
   --shadow: rgba(0, 0, 0, 0.35);
   --overlay: rgba(0, 0, 0, 0.56);
-  --task-tile-size: 180px;
+  --task-tile-size: 196px;
 }
 
 * {
@@ -278,30 +278,40 @@ h3 {
 .add-task-trigger {
   width: 100%;
   min-height: auto;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 0;
   background: var(--magenta);
   border-color: var(--magenta);
   color: var(--magenta-text);
   font-weight: 700;
-  text-align: left;
+  text-align: center;
 }
 
 .add-plus {
   display: inline-grid;
-  width: 28px;
-  height: 28px;
+  width: 84px;
+  height: 84px;
   place-items: center;
-  border: 1px solid color-mix(in srgb, var(--magenta-text) 72%, transparent);
-  font-size: 1.2rem;
+  border: 3px solid color-mix(in srgb, var(--magenta-text) 78%, transparent);
+  border-radius: 999px;
+  font-size: 4rem;
+  font-weight: 500;
   line-height: 1;
+}
+
+.add-task-label {
+  font-size: 1rem;
 }
 
 .add-panel {
   grid-column: 1 / -1;
   margin-bottom: 0;
   display: block;
-  padding: 0.85rem;
+  width: 100%;
+  min-height: 320px;
+  height: auto;
+  padding: 1rem;
   border-color: var(--magenta);
   border-radius: 14px;
   background: var(--surface-strong);
@@ -322,7 +332,7 @@ h3 {
 
 .task-form {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(130px, 150px) minmax(130px, 160px) minmax(130px, 170px) minmax(130px, 160px) auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(130px, 150px) minmax(130px, 160px) minmax(130px, 170px) minmax(130px, 160px) minmax(130px, 150px);
   align-items: end;
   gap: 0.75rem;
 }
@@ -370,7 +380,7 @@ h3 {
   justify-content: space-between;
   flex-direction: column;
   gap: 0.7rem;
-  padding: 0.65rem;
+  padding: 0.75rem;
   width: var(--task-tile-size);
   height: var(--task-tile-size);
   border: 1px solid var(--border);
@@ -473,10 +483,9 @@ html[data-theme="dark"] .importance.medium {
 }
 
 .task-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.35rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.3rem;
   margin-top: auto;
 }
 
@@ -492,15 +501,22 @@ html[data-theme="dark"] .importance.medium {
 .task-move-actions button,
 .task-icon-action {
   display: inline-grid;
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  min-height: 32px;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  min-height: 36px;
   place-items: center;
-  border-color: color-mix(in srgb, currentColor 42%, transparent);
-  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  border: 0;
+  border-radius: 9px;
+  background: var(--surface);
   color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 800;
   padding: 0;
+}
+
+.task-move-actions button {
+  width: 34px;
 }
 
 .task-move-actions button:disabled {
@@ -509,9 +525,24 @@ html[data-theme="dark"] .importance.medium {
 }
 
 .complete-action {
-  background: var(--good-bg);
-  border-color: var(--good);
-  color: var(--good);
+  background: var(--good);
+  color: #ffffff;
+}
+
+.restore-action,
+.details-action {
+  background: var(--warn);
+  color: #171712;
+}
+
+.edit-action {
+  background: var(--magenta);
+  color: var(--magenta-text);
+}
+
+.task-icon-action.danger {
+  background: var(--bad);
+  color: #ffffff;
 }
 
 .task-edit-form {
@@ -585,7 +616,7 @@ html[data-theme="dark"] .importance.medium {
 
   :root,
   html[data-theme="dark"] {
-    --task-tile-size: 150px;
+    --task-tile-size: calc((100vw - 1.55rem) / 2);
   }
 
   .task-grid {

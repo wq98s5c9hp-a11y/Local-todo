@@ -1202,7 +1202,7 @@ export function App() {
                 </button>
               ) : (
                 <button
-                  className="task-icon-action"
+                  className="task-icon-action restore-action"
                   type="button"
                   aria-label="Restore task"
                   title="Restore"
@@ -1212,7 +1212,7 @@ export function App() {
                 </button>
               )}
               <button
-                className="task-icon-action"
+                className="task-icon-action details-action"
                 type="button"
                 aria-label={isExpanded ? "Hide details" : "Show details"}
                 title={isExpanded ? "Hide details" : "Details"}
@@ -1221,7 +1221,7 @@ export function App() {
                 i
               </button>
               <button
-                className="task-icon-action"
+                className="task-icon-action edit-action"
                 type="button"
                 aria-label="Edit task"
                 title="Edit"
@@ -1500,7 +1500,7 @@ export function App() {
                   </label>
                 </details>
 
-                <button type="submit">Add</button>
+                <button type="submit">Create task</button>
               </form>
             </section>
           ) : (
@@ -1510,7 +1510,7 @@ export function App() {
               onClick={() => setIsAddTaskOpen(true)}
             >
               <span className="add-plus">+</span>
-              <span>Add task</span>
+              <span className="add-task-label">Add task</span>
             </button>
           )}
 

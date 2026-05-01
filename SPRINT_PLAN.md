@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 9 executed
+Status: Sprint 10 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -161,3 +161,17 @@ Goal: Keep task tiles visually stable and make the app icon update reliably acro
 - Replaced the logo with solid 45-degree stripes across the full square.
 - Added PNG app icon assets for installed/home-screen use.
 - Added cache-busted icon references in app metadata.
+
+## Sprint 10: Tile Size And Add Form Tuning
+
+Goal: Make the tile grid easier to use on mobile and make task creation feel like a full form after tapping the add tile.
+
+## Completed Scope
+
+- Increased fixed tile sizing.
+- Preserved two-across mobile layout.
+- Centered and enlarged the add-task plus.
+- Changed the opened add form into a larger full-width panel.
+- Changed add submit copy to `Create task`.
+- Made tile action buttons solid colors.
+- Adjusted task action buttons to fit better inside tiles.
