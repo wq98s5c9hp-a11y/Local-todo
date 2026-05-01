@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 16 executed
+Status: Sprint 17 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -265,3 +265,19 @@ Goal: Tighten task tile controls, prevent mobile zoom issues, and make movement/
 - Made icon buttons rounded squares while keeping text/info chips pill-shaped.
 - Added browser spellcheck/autocorrect hints to task title and details fields.
 - Added future archive-window behavior to the roadmap only.
+
+## Sprint 17: Theme Controls And Live Sync Refresh
+
+Goal: Add palette customization and make signed-in task sync update across browsers more reliably.
+
+## Completed Scope
+
+- Added selectable colour schemes: CMYK Pop, Storybook Muted, Earth Workspace, Neon Modern, and Apple Clean.
+- Kept light/dark mode separate from colour scheme with `data-theme` and `data-scheme`.
+- Added a saturation slider persisted to localStorage.
+- Applied saturation to app theme colours while keeping semantic green/yellow/red actions stable.
+- Added a live preview row in the Appearance menu.
+- Added focus/visibility cloud refresh for signed-in users.
+- Added Supabase Realtime subscription for live task updates where Realtime is enabled.
+- Made synced signed-in reloads use the cloud task list as source of truth to avoid stale browser data resurrecting old tasks.
+- Changed drag placement feedback to a neutral between-tile marker instead of a yellow tile highlight.

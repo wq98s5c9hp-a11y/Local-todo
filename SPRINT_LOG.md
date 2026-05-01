@@ -488,3 +488,26 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 17 Approval
+
+- CEO requested drag feedback only mark the space between tiles, using a neutral grey marker instead of yellow tile highlighting.
+- CEO reported tasks were not updating between browsers and requested live update or at least page reload update.
+- CEO requested selectable colour schemes and saturation controls from a supplied implementation brief.
+
+### Sprint 17 Implementation Changes
+
+- Added a separate `colorScheme` setting with five palette options.
+- Added a persisted saturation slider and live palette preview to the Appearance menu.
+- Set `document.documentElement.dataset.scheme` separately from the existing dark/light `dataset.theme`.
+- Added CSS variable palettes for CMYK Pop, Storybook Muted, Earth Workspace, Neon Modern, and Apple Clean in light and dark variants.
+- Applied saturation to theme/action/task colours while leaving semantic status colours stable.
+- Changed movement feedback to a neutral between-tile marker.
+- Added signed-in refresh on page focus and visibility return.
+- Added a Supabase Realtime subscription for task changes where Realtime is enabled.
+- Made reload/focus refresh use the cloud task list as source of truth after the user has synced once.
+
+### Sprint 17 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

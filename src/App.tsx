@@ -13,6 +13,7 @@ import { supabase } from "./supabase";
 type TaskImportance = "low" | "medium" | "high";
 type TaskRepeat = "none" | "daily" | "weekly" | "monthly" | "yearly";
 type EstimateUnit = "minutes" | "hours" | "days" | "weeks";
+type ColorScheme = "cmyk" | "storybook" | "earth" | "neon" | "apple";
 type DropPlacement = {
   taskId: string;
   placement: "before" | "after";
@@ -67,6 +68,9 @@ type TaskRow = {
 
 const STORAGE_KEY = "local-first-todo.tasks";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
+const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
+const SATURATION_STORAGE_KEY = "local-first-todo.saturation";
+const SYNCED_USER_STORAGE_KEY = "local-first-todo.synced-user";
 const BACKUP_VERSION = 1;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_DUE_DAYS = 365;
@@ -90,6 +94,13 @@ const importanceWeight: Record<TaskImportance, number> = {
 };
 
 const estimateUnits: EstimateUnit[] = ["minutes", "hours", "days", "weeks"];
+const colorSchemeOptions: Array<{ value: ColorScheme; label: string }> = [
+  { value: "cmyk", label: "CMYK Pop" },
+  { value: "storybook", label: "Storybook Muted" },
+  { value: "earth", label: "Earth Workspace" },
+  { value: "neon", label: "Neon Modern" },
+  { value: "apple", label: "Apple Clean" },
+];
 
 function createId() {
   if ("crypto" in window && "randomUUID" in window.crypto) {
@@ -119,6 +130,16 @@ function isEstimateUnit(value: unknown): value is EstimateUnit {
     value === "hours" ||
     value === "days" ||
     value === "weeks"
+  );
+}
+
+function isColorScheme(value: unknown): value is ColorScheme {
+  return (
+    value === "cmyk" ||
+    value === "storybook" ||
+    value === "earth" ||
+    value === "neon" ||
+    value === "apple"
   );
 }
 
@@ -218,6 +239,22 @@ function saveTasks(tasks: Task[]) {
 
 function loadDarkMode() {
   return window.localStorage.getItem(THEME_STORAGE_KEY) === "dark";
+}
+
+function loadColorScheme(): ColorScheme {
+  const savedScheme = window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY);
+
+  return isColorScheme(savedScheme) ? savedScheme : "cmyk";
+}
+
+function loadSaturation() {
+  const savedSaturation = Number(window.localStorage.getItem(SATURATION_STORAGE_KEY));
+
+  if (!Number.isFinite(savedSaturation)) {
+    return 100;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(savedSaturation)));
 }
 
 function parseLocalDate(value: string) {
@@ -636,9 +673,14 @@ export function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => loadDarkMode());
+  const [colorScheme, setColorScheme] = useState<ColorScheme>(() =>
+    loadColorScheme(),
+  );
+  const [saturation, setSaturation] = useState(() => loadSaturation());
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null);
   const loadingCloudRef = useRef(false);
+  const cloudRefreshTimerRef = useRef<number | null>(null);
   const completingTaskIdsRef = useRef<Set<string>>(new Set());
   const draftDueDateRef = useRef<HTMLInputElement | null>(null);
   const editingDueDateRef = useRef<HTMLInputElement | null>(null);
@@ -676,12 +718,79 @@ export function App() {
   }, [isDarkMode]);
 
   useEffect(() => {
+    document.documentElement.dataset.scheme = colorScheme;
+    window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, colorScheme);
+  }, [colorScheme]);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--app-saturation",
+      `${saturation}%`,
+    );
+    window.localStorage.setItem(SATURATION_STORAGE_KEY, String(saturation));
+  }, [saturation]);
+
+  useEffect(() => {
     if (!user) {
       setSyncMessage("Local mode");
       return;
     }
 
     loadCloudTasks(user);
+    // Only rerun when the signed-in account changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const refreshCloudTasks = () => {
+      loadCloudTasks(user, { syncAfterLoad: false });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshCloudTasks();
+      }
+    };
+
+    window.addEventListener("focus", refreshCloudTasks);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    const channel = supabase
+      .channel(`tasks-live-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          if (cloudRefreshTimerRef.current) {
+            window.clearTimeout(cloudRefreshTimerRef.current);
+          }
+
+          cloudRefreshTimerRef.current = window.setTimeout(() => {
+            loadCloudTasks(user, { syncAfterLoad: false });
+          }, 250);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener("focus", refreshCloudTasks);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+
+      if (cloudRefreshTimerRef.current) {
+        window.clearTimeout(cloudRefreshTimerRef.current);
+      }
+
+      supabase.removeChannel(channel);
+    };
     // Only rerun when the signed-in account changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
@@ -752,7 +861,10 @@ export function App() {
     setSyncMessage(`Synced ${formatDate(new Date().toISOString())}`);
   }
 
-  async function loadCloudTasks(currentUser: User) {
+  async function loadCloudTasks(
+    currentUser: User,
+    options: { syncAfterLoad?: boolean } = {},
+  ) {
     loadingCloudRef.current = true;
     setSyncMessage("Loading cloud tasks...");
 
@@ -768,12 +880,23 @@ export function App() {
     }
 
     const cloudTasks = (data || []).map((row) => fromTaskRow(row as TaskRow));
-    const mergedTasks = mergeTasks(loadTasks(), cloudTasks);
+    const syncedUserId = window.localStorage.getItem(SYNCED_USER_STORAGE_KEY);
+    const mergedTasks =
+      syncedUserId === currentUser.id
+        ? cloudTasks
+        : mergeTasks(loadTasks(), cloudTasks);
 
     setTasks(mergedTasks);
     saveTasks(mergedTasks);
+    window.localStorage.setItem(SYNCED_USER_STORAGE_KEY, currentUser.id);
     loadingCloudRef.current = false;
-    await syncCloudTasks(mergedTasks, currentUser);
+
+    if (options.syncAfterLoad ?? true) {
+      await syncCloudTasks(mergedTasks, currentUser);
+      return;
+    }
+
+    setSyncMessage(`Updated ${formatDate(new Date().toISOString())}`);
   }
 
   function persistTasks(nextTasks: Task[]) {
@@ -1671,6 +1794,43 @@ export function App() {
                   onChange={(event) => setIsDarkMode(event.target.checked)}
                 />
               </label>
+              <label>
+                <span>Colour scheme</span>
+                <select
+                  value={colorScheme}
+                  onChange={(event) => {
+                    const nextScheme = isColorScheme(event.target.value)
+                      ? event.target.value
+                      : "cmyk";
+
+                    setColorScheme(nextScheme);
+                  }}
+                >
+                  {colorSchemeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Saturation</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={saturation}
+                  onChange={(event) => setSaturation(Number(event.target.value))}
+                />
+              </label>
+              <div className="range-row">
+                <span>{saturation}%</span>
+                <span>0% turns the interface grayscale.</span>
+              </div>
+              <div className="theme-preview" aria-hidden="true">
+                <span className="preview-swatch task-preview" />
+                <span className="preview-swatch action-preview" />
+              </div>
             </section>
 
             <section className="menu-section" aria-labelledby="account">
