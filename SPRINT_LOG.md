@@ -670,3 +670,24 @@
 - Ran `npm run build`.
 - Build completed successfully.
 - Reviewed account loading path: signed-in accounts now load from Supabase rows for that account, while logout and local clear wipe the browser-visible task list.
+
+### Sprint 24 Approval
+
+- CEO requested the active empty-state tile sit next to the add tile with normal grid spacing.
+- CEO requested task meta rows be swapped so due-date chips appear before priority/urgency.
+- CEO requested `Due` and overdue warning indicators move into the front of the task title.
+- CEO requested repeating tasks calculate the next due date from the existing due date rather than the completion date.
+- CEO asked whether the hosted URL can change from `local-todo-theta` to `TileTodo`.
+
+### Sprint 24 Implementation Changes
+
+- Moved the active empty-state tile inside the active task grid.
+- Reordered tile metadata so due date appears above priority/urgency.
+- Added title-level due and overdue indicators.
+- Removed due/overdue from the priority/urgency pill row while keeping `Urgent` there.
+- Changed repeating-task creation to use the task's due date as the repeat anchor when present.
+
+### Sprint 24 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

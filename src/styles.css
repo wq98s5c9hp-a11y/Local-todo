@@ -898,6 +898,33 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.title-status {
+  display: inline-grid;
+  margin-right: 0.35rem;
+  vertical-align: -0.1rem;
+}
+
+.title-status-due {
+  color: var(--bad);
+  font-weight: 900;
+}
+
+.title-status-overdue {
+  width: 1.05rem;
+  height: 0.95rem;
+  background: var(--bad);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.title-status-overdue::after {
+  color: #171712;
+  content: "!";
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.05rem;
+  text-align: center;
+}
+
 .task-title.completed {
   color: var(--archive-text);
   text-decoration: line-through;

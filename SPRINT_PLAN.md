@@ -377,3 +377,17 @@ Goal: Make Tile Todo safer to send to friends by preventing account data bleed, 
 - Load signed-in accounts from that account's cloud task list instead of merging browser-local tasks into every account.
 - Keep default saturation at 90%.
 - Run a production build and review data isolation behavior.
+
+## Sprint 24: Tile Meta Polish And Repeat Date Fix
+
+Goal: Polish tile reading order and make repeat tasks respect the intended due date.
+
+## Planned Scope
+
+- Place the empty active-task placeholder inside the active grid next to the add tile.
+- Show due-date chips before priority/urgency chips.
+- Move `Due` and overdue warning indicators into the task title instead of the pill row.
+- Keep `Urgent` in the pill row.
+- Repeat tasks from their existing due date when present, not from the completion date.
+- Clarify that URL/domain changes are handled in Vercel, not app code.
+- Run a production build.

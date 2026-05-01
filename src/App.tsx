@@ -915,7 +915,8 @@ function createNextRepeatingTask(task: Task, completedAt: string): Task | null {
     return null;
   }
 
-  const nextDueDate = addRepeatInterval(new Date(completedAt), task.repeat);
+  const repeatFromDate = parseLocalDate(task.dueDate) ?? new Date(completedAt);
+  const nextDueDate = addRepeatInterval(repeatFromDate, task.repeat);
 
   return {
     ...task,
@@ -2161,37 +2162,15 @@ export function App() {
               }}
             >
               <p className={task.completed ? "task-title completed" : "task-title"}>
+                {urgencyLabel === "Overdue" ? (
+                  <span className="title-status title-status-overdue" aria-label="Overdue" />
+                ) : null}
+                {urgencyLabel === "Due" ? (
+                  <span className="title-status title-status-due">Due</span>
+                ) : null}
                 {task.title}
               </p>
               <div className="task-meta">
-                <div className="meta-row meta-priority-row">
-                  <span
-                    className={`importance-token ${task.importance}`}
-                    aria-label={`${task.importance} importance`}
-                    title={`${task.importance} importance`}
-                  >
-                    {getImportanceShortLabel(task.importance)}
-                  </span>
-                  {urgencyLabel ? (
-                    <span
-                      className={
-                        urgencyLabel === "Overdue"
-                          ? "urgency overdue"
-                          : urgencyLabel === "Due"
-                          ? "urgency due"
-                          : urgencyLabel === "Urgent"
-                          ? "urgency urgent"
-                          : "urgency"
-                      }
-                    >
-                      {urgencyLabel === "Overdue" ? (
-                        <span className="overdue-icon" aria-label="Overdue" />
-                      ) : (
-                        urgencyLabel
-                      )}
-                    </span>
-                  ) : null}
-                </div>
                 {dueDateParts && dueDaysChip ? (
                   <div className="meta-row meta-date-row">
                     <span className={`due-days-chip ${dueDaysChip.tone}`}>
@@ -2201,6 +2180,20 @@ export function App() {
                     <span className="date-chip">{dueDateParts.day}</span>
                   </div>
                 ) : null}
+                <div className="meta-row meta-priority-row">
+                  <span
+                    className={`importance-token ${task.importance}`}
+                    aria-label={`${task.importance} importance`}
+                    title={`${task.importance} importance`}
+                  >
+                    {getImportanceShortLabel(task.importance)}
+                  </span>
+                  {urgencyLabel === "Urgent" ? (
+                    <span className="urgency urgent">
+                      {urgencyLabel}
+                    </span>
+                  ) : null}
+                </div>
                 <div className="meta-row meta-extra-row">
                   {task.repeat !== "none" ? (
                     <span>{formatRepeat(task.repeat)}</span>
@@ -2873,13 +2866,11 @@ export function App() {
           {activeTasks.map((task, index) =>
             renderTask(task, isHighlightedTask(task, index), index),
           )}
-        </div>
 
-        {!activeTasks.length ? (
-          <div className="task-grid">
+          {!activeTasks.length ? (
             <p className="task empty-state">No active tasks yet.</p>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </section>
 
       <section aria-labelledby="completed-tasks">
