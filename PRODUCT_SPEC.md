@@ -43,8 +43,10 @@ The user can create a new task with:
 - Importance
 - Estimated duration
 - Due date
+- Optional start time, end time, and duration
 - Urgent-before threshold
 - Repeat option
+- Keep-visible flag and visual marker style
 - Optional details
 
 The title is required. Other fields should be easy to set but should not make capture feel slow.
@@ -59,8 +61,10 @@ The user can update an existing task's:
 - Importance
 - Estimated duration
 - Due date
+- Optional start time, end time, and duration
 - Urgent-before threshold
 - Repeat option
+- Keep-visible flag and visual marker style
 - Details
 - Completion state
 
@@ -88,7 +92,7 @@ Current implementation uses an importance field with one of three levels:
 - Urgency means how pressing it is, especially as a deadline approaches.
 - A lower-importance task may need to appear higher if its deadline is soon.
 
-Active tasks are sorted by a simple balance of due-date urgency and importance.
+Active tasks are sorted by a simple balance of due-date urgency, importance, keep-visible flags, and manual movement bias.
 
 The user can manually move active tasks up or down. Once the user manually adjusts the list, that explicit order is preserved and synced.
 
@@ -106,9 +110,7 @@ Supported urgent-before options:
 
 ### Add Estimated Duration
 
-Each task can include an estimated duration.
-
-The first version can use a simple text or numeric input, depending on what keeps the interface clean and quick.
+Each task can include a broad duration block. Duration, start time, and end time are selected from 15-minute app-controlled options so they behave consistently across browsers.
 
 ### Add Details
 
@@ -221,9 +223,14 @@ type Task = {
   importance: TaskImportance;
   estimatedDuration: string;
   dueDate: string;
+  dueTime: string;
+  dueEndTime: string;
+  durationMinutes: number | null;
   urgentBeforeDays: number;
   sortOrder: number | null;
   repeat: TaskRepeat;
+  flagged: boolean;
+  flagType: string;
   details: string;
   completed: boolean;
   createdAt: string;

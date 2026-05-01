@@ -328,3 +328,20 @@ Goal: Add lightweight task flags and due-time capture while simplifying tile con
 - Kept at least the top 4 tasks highlighted, and also highlighted every task due today or tomorrow.
 - Added multi-select/multi-delete, worked-on points, and far-future money-pot ideas to the roadmap only.
 - Added a Supabase migration for flag and due-time columns.
+
+## Sprint 21: Keep-Visible Sorting, Time Blocks, And Sync Safety
+
+Goal: Make flags function as a useful keep-visible signal, replace inconsistent native time controls with consistent app controls, and reduce the risk of newly created tasks disappearing after reload.
+
+## Planned Scope
+
+- Make tile flags smaller and less visually heavy.
+- Treat flagged tasks as `Keep visible` in add/edit language.
+- Add start time, end time, and duration controls using consistent 15-minute dropdowns.
+- Auto-update end time from duration, and duration from end time.
+- Add flag scoring and top-four rebalancing for flagged no-date tasks.
+- Keep marker style visual only for now.
+- Fix yearly repeat to advance by calendar year.
+- Make cloud loading merge local and cloud tasks so a failed/empty sync does not wipe local work on reload.
+- Update Supabase SQL for end time and duration fields.
+- Run a production build.

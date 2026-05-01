@@ -592,3 +592,29 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 21 Approval
+
+- CEO requested the flag control be smaller and less imposing.
+- CEO requested duration, start time, and end time controls in add/edit.
+- CEO requested consistent time selection across desktop Safari, Codex browser, and mobile Safari.
+- CEO requested the desktop date picker close when a date is selected or the user clicks away.
+- CEO reported newly created tasks could disappear on reload and were not updating across browsers/devices.
+- CEO approved treating flags as `Keep visible` and making flag marker types visual only.
+
+### Sprint 21 Implementation Changes
+
+- Changed the add/edit flag language to `Keep visible` with help text for important tasks without hard deadlines.
+- Added start time, end time, and duration fields backed by 15-minute dropdown options.
+- Auto-calculated end time when duration changes, and auto-calculated duration when end time changes.
+- Added `FLAGGED_SCORE = 220` to the task score.
+- Added top-four rebalancing so one flagged no-date task can stay visible when deadline-critical tasks do not fill the top four.
+- Kept marker style visual-only for sorting.
+- Fixed yearly repeat to add one calendar year instead of 365 days.
+- Changed signed-in cloud loading to merge local and cloud tasks before syncing, reducing the chance that a failed/empty cloud read wipes local tasks on reload.
+- Added Supabase SQL columns for `due_end_time` and `duration_minutes`.
+
+### Sprint 21 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

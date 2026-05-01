@@ -6,6 +6,8 @@ create table if not exists public.tasks (
   estimated_duration text not null default '',
   due_date date,
   due_time time,
+  due_end_time time,
+  duration_minutes integer,
   urgent_before_days integer not null default 1,
   sort_order bigint,
   repeat text not null default 'none' check (repeat in ('none', 'daily', 'weekly', 'monthly', 'yearly')),

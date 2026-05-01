@@ -39,6 +39,8 @@ type Task = {
   estimatedDuration: string;
   dueDate: string;
   dueTime: string;
+  dueEndTime: string;
+  durationMinutes: number | null;
   urgentBeforeDays: number;
   sortOrder: number | null;
   details: string;
@@ -57,6 +59,8 @@ type TaskDraft = {
   estimatedDuration: string;
   dueDate: string;
   dueTime: string;
+  dueEndTime: string;
+  durationMinutes: number | null;
   urgentBeforeDays: number;
   details: string;
   repeat: TaskRepeat;
@@ -76,6 +80,8 @@ type TaskRow = {
   estimated_duration: string;
   due_date: string | null;
   due_time: string | null;
+  due_end_time: string | null;
+  duration_minutes: number | null;
   urgent_before_days: number;
   sort_order: number | null;
   details: string;
@@ -98,13 +104,17 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_DUE_DAYS = 365;
 const MANUAL_BIAS_STEP = 24;
 const MAX_MANUAL_BIAS = 144;
+const FLAGGED_SCORE = 220;
+const DAY_MINUTES = 24 * 60;
 
 const emptyDraft: TaskDraft = {
   title: "",
   importance: "medium",
-  estimatedDuration: "minutes",
+  estimatedDuration: "",
   dueDate: "",
   dueTime: "",
+  dueEndTime: "",
+  durationMinutes: null,
   urgentBeforeDays: 1,
   details: "",
   repeat: "none",
@@ -119,6 +129,22 @@ const importanceWeight: Record<TaskImportance, number> = {
 };
 
 const estimateUnits: EstimateUnit[] = ["minutes", "hours", "days", "weeks"];
+const timeOptions = Array.from({ length: 96 }, (_, index) => {
+  const minutes = index * 15;
+
+  return {
+    value: minutesToTimeValue(minutes),
+    label: formatMinutesAsMeridiem(minutes),
+  };
+});
+const durationOptions = Array.from({ length: 48 }, (_, index) => {
+  const minutes = (index + 1) * 15;
+
+  return {
+    value: minutes,
+    label: formatDuration(minutes),
+  };
+});
 const flagTypeOptions: Array<{ value: TaskFlagType; label: string }> = [
   { value: "red_flag", label: "Red flag" },
   { value: "green_flag", label: "Green flag" },
@@ -213,6 +239,96 @@ function normalizeSortOrder(value: unknown) {
   return null;
 }
 
+function normalizeDurationMinutes(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  return Math.min(DAY_MINUTES, Math.round(value / 15) * 15);
+}
+
+function minutesToTimeValue(totalMinutes: number) {
+  const normalizedMinutes = ((totalMinutes % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
+  const hours = Math.floor(normalizedMinutes / 60);
+  const minutes = normalizedMinutes % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function timeValueToMinutes(value: string) {
+  const [hours, minutes] = value.split(":").map(Number);
+
+  if (
+    !Number.isInteger(hours) ||
+    !Number.isInteger(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
+function formatMinutesAsMeridiem(totalMinutes: number) {
+  const normalizedMinutes = ((totalMinutes % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
+  const hours = Math.floor(normalizedMinutes / 60);
+  const minutes = normalizedMinutes % 60;
+  const displayHours = hours % 12 || 12;
+  const period = hours < 12 ? "AM" : "PM";
+
+  return `${displayHours}:${String(minutes).padStart(2, "0")} ${period}`;
+}
+
+function formatDuration(minutes: number) {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  const hourLabel = `${hours} hr${hours === 1 ? "" : "s"}`;
+
+  return remainingMinutes ? `${hourLabel} ${remainingMinutes} min` : hourLabel;
+}
+
+function addDurationToTime(startTime: string, durationMinutes: number | null) {
+  const startMinutes = timeValueToMinutes(startTime);
+
+  if (startMinutes === null || durationMinutes === null) {
+    return "";
+  }
+
+  return minutesToTimeValue(startMinutes + durationMinutes);
+}
+
+function getDurationBetweenTimes(startTime: string, endTime: string) {
+  const startMinutes = timeValueToMinutes(startTime);
+  const endMinutes = timeValueToMinutes(endTime);
+
+  if (startMinutes === null || endMinutes === null) {
+    return null;
+  }
+
+  const rawDuration = endMinutes > startMinutes
+    ? endMinutes - startMinutes
+    : endMinutes + DAY_MINUTES - startMinutes;
+
+  return normalizeDurationMinutes(rawDuration);
+}
+
+function normalizeTimeValue(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const minutes = timeValueToMinutes(value.slice(0, 5));
+
+  return minutes === null ? "" : minutesToTimeValue(minutes);
+}
+
 function normalizeTask(value: unknown): Task | null {
   if (!value || typeof value !== "object") {
     return null;
@@ -243,7 +359,9 @@ function normalizeTask(value: unknown): Task | null {
     estimatedDuration:
       typeof task.estimatedDuration === "string" ? task.estimatedDuration : "",
     dueDate: typeof task.dueDate === "string" ? normalizeDueDate(task.dueDate) : "",
-    dueTime: typeof task.dueTime === "string" ? task.dueTime : "",
+    dueTime: normalizeTimeValue(task.dueTime),
+    dueEndTime: normalizeTimeValue(task.dueEndTime),
+    durationMinutes: normalizeDurationMinutes(task.durationMinutes),
     urgentBeforeDays: normalizeUrgentBeforeDays(task.urgentBeforeDays),
     sortOrder: normalizeSortOrder(task.sortOrder),
     details: typeof task.details === "string" ? task.details : "",
@@ -428,6 +546,21 @@ function getDueScore(daysUntilDue: number | null) {
   return Math.max(0, 35 - daysUntilDue * 0.35);
 }
 
+function getFlagScore(task: Task) {
+  return task.flagged ? FLAGGED_SCORE : 0;
+}
+
+function getDueTimeScore(task: Task) {
+  const daysUntilDue = getDaysUntilDue(task.dueDate);
+  const dueTimeMinutes = timeValueToMinutes(task.dueTime);
+
+  if (daysUntilDue !== 0 || dueTimeMinutes === null) {
+    return 0;
+  }
+
+  return (DAY_MINUTES - dueTimeMinutes) / DAY_MINUTES;
+}
+
 function getTaskBaseScore(task: Task) {
   const daysUntilDue = getDaysUntilDue(task.dueDate);
   const importanceScore = (importanceWeight[task.importance] - 1) * 34;
@@ -436,11 +569,57 @@ function getTaskBaseScore(task: Task) {
       ? 120
       : 0;
 
-  return getDueScore(daysUntilDue) + importanceScore + urgentThresholdScore;
+  return (
+    getDueScore(daysUntilDue) +
+    importanceScore +
+    urgentThresholdScore +
+    getFlagScore(task) +
+    getDueTimeScore(task)
+  );
 }
 
 function getTaskScore(task: Task) {
   return getTaskBaseScore(task) + getManualBias(task) + getStableTieBreak(task);
+}
+
+function isDeadlineCritical(task: Task) {
+  const daysUntilDue = getDaysUntilDue(task.dueDate);
+
+  return (
+    daysUntilDue !== null &&
+    (daysUntilDue < 0 ||
+      daysUntilDue === 0 ||
+      (daysUntilDue >= 0 && daysUntilDue <= task.urgentBeforeDays))
+  );
+}
+
+function rebalanceVisibleFlaggedTasks(sortedTasks: Task[]) {
+  const topFour = sortedTasks.slice(0, 4);
+  const topFourHasFlaggedNoDate = topFour.some(
+    (task) => task.flagged && !task.dueDate && !task.completed,
+  );
+  const deadlineCriticalCount = topFour.filter(isDeadlineCritical).length;
+
+  if (topFourHasFlaggedNoDate || deadlineCriticalCount >= 2) {
+    return sortedTasks;
+  }
+
+  const flaggedNoDateTask = sortedTasks
+    .slice(4)
+    .find((task) => task.flagged && !task.dueDate && !task.completed);
+
+  if (!flaggedNoDateTask) {
+    return sortedTasks;
+  }
+
+  const remainingTasks = sortedTasks.filter((task) => task.id !== flaggedNoDateTask.id);
+  const insertionIndex = Math.min(3, remainingTasks.length);
+
+  return [
+    ...remainingTasks.slice(0, insertionIndex),
+    flaggedNoDateTask,
+    ...remainingTasks.slice(insertionIndex),
+  ];
 }
 
 function getBiasForDesiredIndex(
@@ -483,6 +662,47 @@ function parseEstimateUnit(value: string): EstimateUnit {
   }
 
   return "minutes";
+}
+
+function updateDraftStartTime(draft: TaskDraft, dueTime: string): TaskDraft {
+  const normalizedDueTime = normalizeTimeValue(dueTime);
+  const nextEndTime = normalizedDueTime
+    ? addDurationToTime(normalizedDueTime, draft.durationMinutes)
+    : "";
+
+  return {
+    ...draft,
+    dueTime: normalizedDueTime,
+    dueEndTime: nextEndTime || draft.dueEndTime,
+  };
+}
+
+function updateDraftEndTime(draft: TaskDraft, dueEndTime: string): TaskDraft {
+  const normalizedEndTime = normalizeTimeValue(dueEndTime);
+
+  return {
+    ...draft,
+    dueEndTime: normalizedEndTime,
+    durationMinutes: normalizedEndTime
+      ? getDurationBetweenTimes(draft.dueTime, normalizedEndTime)
+      : draft.durationMinutes,
+  };
+}
+
+function updateDraftDuration(
+  draft: TaskDraft,
+  durationMinutes: number | null,
+): TaskDraft {
+  const normalizedDuration = normalizeDurationMinutes(durationMinutes);
+
+  return {
+    ...draft,
+    estimatedDuration: normalizedDuration ? formatDuration(normalizedDuration) : "",
+    durationMinutes: normalizedDuration,
+    dueEndTime: draft.dueTime
+      ? addDurationToTime(draft.dueTime, normalizedDuration)
+      : draft.dueEndTime,
+  };
 }
 
 function getUrgencyLabel(task: Task) {
@@ -617,6 +837,7 @@ function getFlagIcon(flagType: TaskFlagType) {
 }
 
 function getFlagTone(flagType: TaskFlagType) {
+  // Marker style is visual only for now; the flagged state means "keep visible".
   return flagType.startsWith("green") ? "green" : "red";
 }
 
@@ -627,9 +848,13 @@ function createTaskFromDraft(draft: TaskDraft): Task {
     id: createId(),
     title: draft.title.trim(),
     importance: draft.importance,
-    estimatedDuration: draft.estimatedDuration.trim(),
+    estimatedDuration: draft.durationMinutes
+      ? formatDuration(draft.durationMinutes)
+      : draft.estimatedDuration.trim(),
     dueDate: normalizeDueDate(draft.dueDate),
-    dueTime: draft.dueTime,
+    dueTime: normalizeTimeValue(draft.dueTime),
+    dueEndTime: normalizeTimeValue(draft.dueEndTime),
+    durationMinutes: normalizeDurationMinutes(draft.durationMinutes),
     urgentBeforeDays: draft.urgentBeforeDays,
     sortOrder: 0,
     details: draft.details.trim(),
@@ -673,7 +898,7 @@ function addRepeatInterval(date: Date, repeat: TaskRepeat) {
   }
 
   if (repeat === "yearly") {
-    nextDate.setDate(nextDate.getDate() + MAX_DUE_DAYS);
+    nextDate.setFullYear(nextDate.getFullYear() + 1);
   }
 
   return nextDate;
@@ -707,6 +932,8 @@ function toTaskRow(task: Task, userId: string): TaskRow {
     estimated_duration: task.estimatedDuration,
     due_date: task.dueDate || null,
     due_time: task.dueTime || null,
+    due_end_time: task.dueEndTime || null,
+    duration_minutes: task.durationMinutes,
     urgent_before_days: task.urgentBeforeDays,
     sort_order: task.sortOrder,
     details: task.details,
@@ -727,7 +954,9 @@ function fromTaskRow(row: TaskRow): Task {
     importance: row.importance,
     estimatedDuration: row.estimated_duration,
     dueDate: normalizeDueDate(row.due_date || ""),
-    dueTime: row.due_time || "",
+    dueTime: normalizeTimeValue(row.due_time),
+    dueEndTime: normalizeTimeValue(row.due_end_time),
+    durationMinutes: normalizeDurationMinutes(row.duration_minutes),
     urgentBeforeDays: row.urgent_before_days,
     sortOrder: normalizeSortOrder(row.sort_order),
     details: row.details,
@@ -836,6 +1065,23 @@ export function App() {
   }, [saturation]);
 
   useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+
+      if (
+        target instanceof Element &&
+        !target.closest(".date-control")
+      ) {
+        closeOpenDatePicker();
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, []);
+
+  useEffect(() => {
     if (!user) {
       setSyncMessage("Local mode");
       return;
@@ -901,8 +1147,8 @@ export function App() {
   }, [user?.id]);
 
   const activeTasks = useMemo(
-    () =>
-      tasks
+    () => {
+      const sortedTasks = tasks
         .filter((task) => !task.completed)
         .sort((firstTask, secondTask) => {
           const scoreDifference = getTaskScore(secondTask) - getTaskScore(firstTask);
@@ -915,7 +1161,10 @@ export function App() {
             new Date(secondTask.createdAt).getTime() -
             new Date(firstTask.createdAt).getTime()
           );
-        }),
+        });
+
+      return rebalanceVisibleFlaggedTasks(sortedTasks);
+    },
     [tasks],
   );
 
@@ -926,7 +1175,7 @@ export function App() {
 
   async function syncCloudTasks(nextTasks: Task[], currentUser = user) {
     if (!currentUser || loadingCloudRef.current) {
-      return;
+      return false;
     }
 
     setSyncMessage("Syncing...");
@@ -949,7 +1198,7 @@ export function App() {
 
     if (deleteError) {
       setSyncMessage(`Sync error: ${deleteError.message}`);
-      return;
+      return false;
     }
 
     if (taskRows.length) {
@@ -959,11 +1208,13 @@ export function App() {
 
       if (upsertError) {
         setSyncMessage(`Sync error: ${upsertError.message}`);
-        return;
+        return false;
       }
     }
 
+    window.localStorage.setItem(SYNCED_USER_STORAGE_KEY, currentUser.id);
     setSyncMessage(`Synced ${formatDate(new Date().toISOString())}`);
+    return true;
   }
 
   async function loadCloudTasks(
@@ -985,19 +1236,19 @@ export function App() {
     }
 
     const cloudTasks = (data || []).map((row) => fromTaskRow(row as TaskRow));
-    const syncedUserId = window.localStorage.getItem(SYNCED_USER_STORAGE_KEY);
-    const mergedTasks =
-      syncedUserId === currentUser.id
-        ? cloudTasks
-        : mergeTasks(loadTasks(), cloudTasks);
+    const mergedTasks = mergeTasks(loadTasks(), cloudTasks);
 
     setTasks(mergedTasks);
     saveTasks(mergedTasks);
-    window.localStorage.setItem(SYNCED_USER_STORAGE_KEY, currentUser.id);
     loadingCloudRef.current = false;
 
     if (options.syncAfterLoad ?? true) {
-      await syncCloudTasks(mergedTasks, currentUser);
+      const syncSucceeded = await syncCloudTasks(mergedTasks, currentUser);
+
+      if (!syncSucceeded) {
+        saveTasks(mergedTasks);
+      }
+
       return;
     }
 
@@ -1040,6 +1291,11 @@ export function App() {
     }
 
     dateInput.focus();
+  }
+
+  function closeOpenDatePicker() {
+    draftDueDateRef.current?.blur();
+    editingDueDateRef.current?.blur();
   }
 
   function validateAuthFields() {
@@ -1147,6 +1403,8 @@ export function App() {
       estimatedDuration: task.estimatedDuration,
       dueDate: task.dueDate,
       dueTime: task.dueTime,
+      dueEndTime: task.dueEndTime,
+      durationMinutes: task.durationMinutes,
       urgentBeforeDays: task.urgentBeforeDays,
       details: task.details,
       repeat: task.repeat,
@@ -1175,9 +1433,13 @@ export function App() {
               ...task,
               title,
               importance: editingDraft.importance,
-              estimatedDuration: editingDraft.estimatedDuration.trim(),
+              estimatedDuration: editingDraft.durationMinutes
+                ? formatDuration(editingDraft.durationMinutes)
+                : editingDraft.estimatedDuration.trim(),
               dueDate: normalizeDueDate(editingDraft.dueDate),
-              dueTime: editingDraft.dueTime,
+              dueTime: normalizeTimeValue(editingDraft.dueTime),
+              dueEndTime: normalizeTimeValue(editingDraft.dueEndTime),
+              durationMinutes: normalizeDurationMinutes(editingDraft.durationMinutes),
               urgentBeforeDays: editingDraft.urgentBeforeDays,
               details: editingDraft.details.trim(),
               repeat: editingDraft.repeat,
@@ -1508,6 +1770,44 @@ export function App() {
     );
   }
 
+  function renderTimeSelect(
+    value: string,
+    onChange: (nextValue: string) => void,
+    emptyLabel: string,
+  ) {
+    return (
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="">{emptyLabel}</option>
+        {timeOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  function renderDurationControl(
+    value: number | null,
+    onChange: (nextValue: number | null) => void,
+  ) {
+    return (
+      <select
+        value={value ?? ""}
+        onChange={(event) =>
+          onChange(event.target.value ? Number(event.target.value) : null)
+        }
+      >
+        <option value="">No duration</option>
+        {durationOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
   function isHighlightedTask(task: Task, activeIndex: number) {
     const daysUntilDue = getDaysUntilDue(task.dueDate);
 
@@ -1556,8 +1856,8 @@ export function App() {
             .filter(Boolean)
             .join(" ")}
           type="button"
-          aria-label={task.flagged ? "Unflag task" : "Flag task"}
-          title={task.flagged ? "Unflag" : "Flag"}
+          aria-label={task.flagged ? "Keep visible is on" : "Keep visible is off"}
+          title={task.flagged ? "Keep visible is on" : "Keep visible is off"}
           onClick={() => toggleTaskFlag(task.id)}
         >
           {getFlagIcon(task.flagType)}
@@ -1605,12 +1905,9 @@ export function App() {
             </label>
 
             <label>
-              <span>Time estimate</span>
-              {renderEstimateControl(editingDraft.estimatedDuration, (nextValue) =>
-                setEditingDraft({
-                  ...editingDraft,
-                  estimatedDuration: nextValue,
-                }),
+              <span>Duration</span>
+              {renderDurationControl(editingDraft.durationMinutes, (nextValue) =>
+                setEditingDraft(updateDraftDuration(editingDraft, nextValue)),
               )}
             </label>
 
@@ -1622,12 +1919,13 @@ export function App() {
                   type="date"
                   max={getMaxDueDateInputValue()}
                   value={editingDraft.dueDate}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setEditingDraft({
                       ...editingDraft,
                       dueDate: event.target.value,
-                    })
-                  }
+                    });
+                    event.currentTarget.blur();
+                  }}
                 />
                 <button
                   type="button"
@@ -1640,17 +1938,19 @@ export function App() {
             </label>
 
             <label>
-              <span>Due time</span>
-              <input
-                type="time"
-                value={editingDraft.dueTime}
-                onChange={(event) =>
-                  setEditingDraft({
-                    ...editingDraft,
-                    dueTime: event.target.value,
-                  })
-                }
-              />
+              <span>Start time</span>
+              {renderTimeSelect(editingDraft.dueTime, (nextValue) =>
+                setEditingDraft(updateDraftStartTime(editingDraft, nextValue)),
+                "No start time",
+              )}
+            </label>
+
+            <label>
+              <span>End time</span>
+              {renderTimeSelect(editingDraft.dueEndTime, (nextValue) =>
+                setEditingDraft(updateDraftEndTime(editingDraft, nextValue)),
+                "No end time",
+              )}
             </label>
 
             <label>
@@ -1692,7 +1992,7 @@ export function App() {
             </label>
 
             <label>
-              <span>Flag type</span>
+              <span>Marker style</span>
               <select
                 value={editingDraft.flagType}
                 onChange={(event) =>
@@ -1713,7 +2013,7 @@ export function App() {
             </label>
 
             <label className="toggle-row">
-              <span>Flagged</span>
+              <span>Keep visible</span>
               <input
                 type="checkbox"
                 checked={editingDraft.flagged}
@@ -1725,6 +2025,7 @@ export function App() {
                 }
               />
             </label>
+            <p className="field-help">For important tasks without a hard deadline.</p>
 
             <label className="full-field">
               <span>Details</span>
@@ -1829,7 +2130,13 @@ export function App() {
                     </p>
                   ) : null}
                   {task.dueTime ? (
-                    <p className="muted">Due time {formatTime(task.dueTime)}</p>
+                    <p className="muted">Start time {formatTime(task.dueTime)}</p>
+                  ) : null}
+                  {task.dueEndTime ? (
+                    <p className="muted">End time {formatTime(task.dueEndTime)}</p>
+                  ) : null}
+                  {task.durationMinutes ? (
+                    <p className="muted">Duration {formatDuration(task.durationMinutes)}</p>
                   ) : null}
                   {task.completedAt ? (
                     <p className="muted">Completed {formatDate(task.completedAt)}</p>
@@ -2137,9 +2444,9 @@ export function App() {
                 </label>
 
                 <label>
-                  <span>Time estimate</span>
-                  {renderEstimateControl(draft.estimatedDuration, (nextValue) =>
-                    setDraft({ ...draft, estimatedDuration: nextValue }),
+                  <span>Duration</span>
+                  {renderDurationControl(draft.durationMinutes, (nextValue) =>
+                    setDraft(updateDraftDuration(draft, nextValue)),
                   )}
                 </label>
 
@@ -2151,9 +2458,10 @@ export function App() {
                       type="date"
                       max={getMaxDueDateInputValue()}
                       value={draft.dueDate}
-                      onChange={(event) =>
-                        setDraft({ ...draft, dueDate: event.target.value })
-                      }
+                      onChange={(event) => {
+                        setDraft({ ...draft, dueDate: event.target.value });
+                        event.currentTarget.blur();
+                      }}
                     />
                     <button
                       type="button"
@@ -2166,14 +2474,19 @@ export function App() {
                 </label>
 
                 <label>
-                  <span>Due time</span>
-                  <input
-                    type="time"
-                    value={draft.dueTime}
-                    onChange={(event) =>
-                      setDraft({ ...draft, dueTime: event.target.value })
-                    }
-                  />
+                  <span>Start time</span>
+                  {renderTimeSelect(draft.dueTime, (nextValue) =>
+                    setDraft(updateDraftStartTime(draft, nextValue)),
+                    "No start time",
+                  )}
+                </label>
+
+                <label>
+                  <span>End time</span>
+                  {renderTimeSelect(draft.dueEndTime, (nextValue) =>
+                    setDraft(updateDraftEndTime(draft, nextValue)),
+                    "No end time",
+                  )}
                 </label>
 
                 <label>
@@ -2215,7 +2528,7 @@ export function App() {
                 </label>
 
                 <label>
-                  <span>Flag type</span>
+                  <span>Marker style</span>
                   <select
                     value={draft.flagType}
                     onChange={(event) =>
@@ -2236,7 +2549,7 @@ export function App() {
                 </label>
 
                 <label className="toggle-row">
-                  <span>Flagged</span>
+                  <span>Keep visible</span>
                   <input
                     type="checkbox"
                     checked={draft.flagged}
@@ -2245,6 +2558,7 @@ export function App() {
                     }
                   />
                 </label>
+                <p className="field-help">For important tasks without a hard deadline.</p>
 
                 <details className="details-entry">
                   <summary>Details</summary>

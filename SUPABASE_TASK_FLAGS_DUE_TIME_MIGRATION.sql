@@ -2,6 +2,12 @@ alter table public.tasks
 add column if not exists due_time time;
 
 alter table public.tasks
+add column if not exists due_end_time time;
+
+alter table public.tasks
+add column if not exists duration_minutes integer;
+
+alter table public.tasks
 add column if not exists flagged boolean not null default false;
 
 alter table public.tasks

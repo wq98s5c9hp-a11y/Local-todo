@@ -555,10 +555,16 @@ h3 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.4rem;
+  max-width: 100%;
 }
 
 .estimate-control {
   display: block;
+}
+
+.date-control input,
+.date-control button {
+  min-width: 0;
 }
 
 .date-control button {
@@ -712,29 +718,33 @@ h3 {
 
 .flag-toggle {
   position: absolute;
-  top: 0.55rem;
-  right: 0.55rem;
+  top: 0.6rem;
+  right: 0.6rem;
   z-index: 1;
   display: inline-grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  min-height: 2.25rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
   place-items: center;
-  border: 0;
-  border-radius: 14px;
-  background: #171712;
-  color: #d8d9d4;
-  font-size: 1.2rem;
+  border: 2px solid color-mix(in srgb, currentColor 42%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 10%, transparent);
+  color: color-mix(in srgb, var(--surface) 54%, #171712);
+  font-size: 0.9rem;
   font-weight: 900;
   line-height: 1;
   padding: 0;
 }
 
 .flag-toggle.is-flagged.flag-red {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
   color: var(--bad);
 }
 
 .flag-toggle.is-flagged.flag-green {
+  border-color: var(--good);
+  background: color-mix(in srgb, var(--good) 10%, transparent);
   color: var(--good);
 }
 
@@ -1071,6 +1081,14 @@ h3 {
   min-height: 22px;
 }
 
+.field-help {
+  align-self: center;
+  color: inherit;
+  font-size: 0.82rem;
+  margin: 0;
+  opacity: 0.75;
+}
+
 .range-row {
   display: flex;
   justify-content: space-between;
@@ -1163,6 +1181,10 @@ h3 {
   .task-form,
   .task-edit-form {
     grid-template-columns: 1fr;
+  }
+
+  .date-control {
+    grid-template-columns: minmax(0, 1fr) minmax(4rem, auto);
   }
 
   .wide-field,
