@@ -290,6 +290,22 @@ Completed features:
 - Add and edit expanded panels keep the same color family as their originating tile.
 - Archive tiles use light grey with darker crossed-out text.
 
+## Stage 20: Sticky Note Tile Lock
+
+Status: Complete
+
+Make the task grid behave more like physical sticky notes.
+
+Completed features:
+
+- Desktop tiles use fixed 196px sizing.
+- Desktop grid leaves empty space until another full column fits.
+- Mobile keeps two side-by-side tiles.
+- `Due` chip uses red text.
+- Buttons use pill/capsule styling.
+- Add plus is centered in its tile.
+- Save buttons use the opposite cyan/magenta color of the tile being edited.
+
 ## Planned Later Improvements
 
 - Spellcheck for task entry and notes.

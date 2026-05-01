@@ -1190,6 +1190,8 @@ export function App() {
                     className={
                       urgencyLabel === "Overdue"
                         ? "urgency overdue"
+                        : urgencyLabel === "Due"
+                        ? "urgency due"
                         : urgencyLabel === "Urgent"
                         ? "urgency urgent"
                         : "urgency"

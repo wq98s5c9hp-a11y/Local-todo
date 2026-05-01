@@ -87,7 +87,7 @@ textarea {
 
 button {
   border: 1px solid var(--border-strong);
-  border-radius: 6px;
+  border-radius: 999px;
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
@@ -294,6 +294,9 @@ h3 {
 
 .add-plus {
   display: inline-grid;
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 84px;
   height: 84px;
   place-items: center;
@@ -302,10 +305,24 @@ h3 {
   font-size: 4rem;
   font-weight: 500;
   line-height: 1;
+  transform: translate(-50%, -50%);
 }
 
 .add-task-label {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--magenta);
+  color: var(--magenta-text);
   font-size: 1rem;
+  padding: 0.35rem 0.9rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 .panel-header {
@@ -355,7 +372,7 @@ h3 {
 
 .task-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, var(--task-tile-size));
+  grid-template-columns: repeat(auto-fill, 196px);
   gap: 0.75rem;
   justify-content: start;
   margin: 0;
@@ -371,8 +388,8 @@ h3 {
   flex-direction: column;
   gap: 0.7rem;
   padding: 0.75rem;
-  width: var(--task-tile-size);
-  height: var(--task-tile-size);
+  width: 196px;
+  height: 196px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--task-normal);
@@ -513,6 +530,10 @@ h3 {
 .urgency {
   background: #171712;
   color: var(--task-normal);
+}
+
+.urgency.due {
+  color: var(--bad);
 }
 
 .urgency.urgent {
@@ -664,6 +685,24 @@ h3 {
   grid-template-columns: 1fr;
 }
 
+.task-editing button[type="submit"] {
+  background: var(--magenta);
+  border-color: var(--magenta);
+  color: var(--magenta-text);
+}
+
+.task-featured.task-editing button[type="submit"] {
+  background: var(--task-normal);
+  border-color: var(--task-normal);
+  color: var(--task-text);
+}
+
+.add-panel button[type="submit"] {
+  background: var(--magenta);
+  border-color: var(--magenta);
+  color: var(--magenta-text);
+}
+
 .wide-field {
   grid-column: span 2;
 }
@@ -757,6 +796,8 @@ h3 {
   .task {
     gap: 0.75rem;
     padding: 0.65rem;
+    width: var(--task-tile-size);
+    height: var(--task-tile-size);
     align-items: stretch;
   }
 

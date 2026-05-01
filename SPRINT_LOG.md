@@ -384,3 +384,28 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 13 Approval
+
+- CEO requested desktop tiles behave like fixed-size sticky notes and stop resizing with page width.
+- CEO requested `Due` text to be red.
+- CEO requested all buttons use a contrasting capsule shape.
+- CEO requested add/create task controls to use magenta capsule styling.
+- CEO requested edit save to use the opposite cyan/magenta color of the tile being edited.
+- CEO requested the add-task plus symbol be centered in the tile.
+
+### Sprint 13 Implementation Changes
+
+- Changed desktop grid columns and tile dimensions to literal `196px` values.
+- Preserved calculated two-column sizing only inside the mobile layout.
+- Made `Due` urgency chip red.
+- Changed default buttons to pill/capsule shape.
+- Centered the add plus symbol independently of the add label.
+- Styled the add label as a magenta capsule.
+- Styled create-task as a magenta capsule.
+- Styled edit save as magenta on cyan tiles and cyan on magenta tiles.
+
+### Sprint 13 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

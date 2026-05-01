@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 12 executed
+Status: Sprint 13 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -206,3 +206,17 @@ Goal: Keep fixed tiles readable on desktop and mobile while preserving the squar
 
 - Spellcheck.
 - Better more-info display.
+
+## Sprint 13: Sticky Note Tile Lock
+
+Goal: Make the task tiles behave more like physical sticky notes and polish button contrast.
+
+## Completed Scope
+
+- Locked desktop task tiles to literal 196px columns and 196px tiles.
+- Preserved two-across mobile tile sizing.
+- Made `Due` display in red.
+- Changed controls to pill/capsule button styling.
+- Centered the add-task plus in the tile.
+- Made add/create controls use magenta capsule styling.
+- Made edit save use the opposite cyan/magenta color of the tile being edited.
