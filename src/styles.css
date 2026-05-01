@@ -471,11 +471,138 @@ h3 {
   margin-top: 0;
 }
 
+.menu-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.menu-tabs button {
+  min-height: 36px;
+  border-radius: 999px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.88rem;
+}
+
+.menu-tabs button.active {
+  background: color-mix(in srgb, var(--magenta) var(--app-saturation), #8d8d8d);
+  border-color: var(--magenta);
+  color: var(--magenta-text);
+}
+
 .menu-section {
   display: grid;
   gap: 0.75rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border);
+}
+
+.help-section,
+.info-section {
+  gap: 0.8rem;
+}
+
+.help-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.help-list p,
+.info-section p {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.help-list p {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.help-sample {
+  display: inline-grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--surface-strong);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.add-sample,
+.edit-sample,
+.info-sample {
+  background: color-mix(in srgb, var(--magenta) var(--app-saturation), #8d8d8d);
+  color: var(--magenta-text);
+}
+
+.complete-sample,
+.restore-sample {
+  background: var(--good);
+  color: #ffffff;
+}
+
+.grip-sample {
+  background: #171712;
+  color: #ffffff;
+}
+
+.flag-sample {
+  border: 2px solid var(--bad);
+  background: color-mix(in srgb, var(--bad) 10%, transparent);
+  color: var(--bad);
+}
+
+.chip-sample {
+  width: auto;
+  min-width: 2.15rem;
+  border-radius: 999px;
+  background: #171712;
+  color: var(--warn);
+  padding-inline: 0.45rem;
+}
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: var(--overlay);
+  padding: 1rem;
+}
+
+.confirm-dialog {
+  display: grid;
+  gap: 1rem;
+  width: min(420px, 100%);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 20px 48px var(--shadow);
+  padding: 1rem;
+}
+
+.confirm-dialog h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.confirm-actions button:last-child {
+  background: var(--good);
+  border-color: var(--good);
+  color: #ffffff;
 }
 
 .auth-form {

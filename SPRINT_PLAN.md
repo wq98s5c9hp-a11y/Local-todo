@@ -345,3 +345,19 @@ Goal: Make flags function as a useful keep-visible signal, replace inconsistent 
 - Make cloud loading merge local and cloud tasks so a failed/empty sync does not wipe local work on reload.
 - Update Supabase SQL for end time and duration fields.
 - Run a production build.
+
+## Sprint 22: Menu Help And Duration Labels
+
+Goal: Make the task form language clearer, add first-user help, and make account creation confirmation playful but explicit.
+
+## Planned Scope
+
+- Move actual duration after end time in add/edit.
+- Restore broad duration estimate as minutes, hours, days, or weeks.
+- Rename the measured time field to `Actual duration`.
+- Rename the broad estimate field to `Duration estimate`.
+- Add the requested account-creation joke confirmation flow.
+- Move current menu content under a Settings tab.
+- Add a How to use tab with button/function explanations.
+- Add an Info tab describing Tile Todo and its sorting behavior.
+- Run a production build.

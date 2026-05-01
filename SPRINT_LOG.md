@@ -618,3 +618,28 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 22 Approval
+
+- CEO requested actual duration appear after end time in add/edit.
+- CEO requested the broad estimated-duration field return after actual duration.
+- CEO requested the fields be named `Actual duration` and `Duration estimate`.
+- CEO requested a playful confirmation flow before account creation.
+- CEO requested the menu split into Settings, How to use, and Info tabs.
+- CEO requested How to use explain the app's functions and button meanings.
+- CEO requested Info describe the app and its sorting behavior.
+
+### Sprint 22 Implementation Changes
+
+- Reordered add/edit time fields to Due, Start time, End time, Actual duration, then Duration estimate.
+- Restored the broad estimate dropdown with `No estimate`, minutes, hours, days, and weeks.
+- Kept actual duration separate from duration estimate.
+- Added the requested account-creation confirmation modal flow.
+- Moved existing appearance/account/backup menu sections under Settings.
+- Added How to use tab with visual button samples and explanations.
+- Added Info tab with a plain-language app and sorting description.
+
+### Sprint 22 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

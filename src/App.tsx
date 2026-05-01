@@ -31,6 +31,8 @@ type DropPlacement = {
   taskId: string;
   placement: "before" | "after";
 };
+type MenuTab = "settings" | "how-to" | "info";
+type SignupConfirmStep = "first" | "joke" | "second";
 
 type Task = {
   id: string;
@@ -697,7 +699,6 @@ function updateDraftDuration(
 
   return {
     ...draft,
-    estimatedDuration: normalizedDuration ? formatDuration(normalizedDuration) : "",
     durationMinutes: normalizedDuration,
     dueEndTime: draft.dueTime
       ? addDurationToTime(draft.dueTime, normalizedDuration)
@@ -848,9 +849,7 @@ function createTaskFromDraft(draft: TaskDraft): Task {
     id: createId(),
     title: draft.title.trim(),
     importance: draft.importance,
-    estimatedDuration: draft.durationMinutes
-      ? formatDuration(draft.durationMinutes)
-      : draft.estimatedDuration.trim(),
+    estimatedDuration: draft.estimatedDuration.trim(),
     dueDate: normalizeDueDate(draft.dueDate),
     dueTime: normalizeTimeValue(draft.dueTime),
     dueEndTime: normalizeTimeValue(draft.dueEndTime),
@@ -1005,7 +1004,10 @@ export function App() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [syncMessage, setSyncMessage] = useState("Local mode");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuTab, setMenuTab] = useState<MenuTab>("settings");
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [signupConfirmStep, setSignupConfirmStep] =
+    useState<SignupConfirmStep | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(() => loadDarkMode());
   const [colorScheme, setColorScheme] = useState<ColorScheme>(() =>
     loadColorScheme(),
@@ -1331,13 +1333,25 @@ export function App() {
     });
   }
 
-  async function handleCreateAccount() {
+  function startCreateAccountConfirmation() {
     const credentials = validateAuthFields();
 
     if (!credentials) {
       return;
     }
 
+    setSignupConfirmStep("first");
+  }
+
+  async function createAccountAfterConfirmation() {
+    const credentials = validateAuthFields();
+
+    if (!credentials) {
+      setSignupConfirmStep(null);
+      return;
+    }
+
+    setSignupConfirmStep(null);
     setAuthMessage("Creating account...");
     setAuthSubmitting(true);
 
@@ -1433,9 +1447,7 @@ export function App() {
               ...task,
               title,
               importance: editingDraft.importance,
-              estimatedDuration: editingDraft.durationMinutes
-                ? formatDuration(editingDraft.durationMinutes)
-                : editingDraft.estimatedDuration.trim(),
+              estimatedDuration: editingDraft.estimatedDuration.trim(),
               dueDate: normalizeDueDate(editingDraft.dueDate),
               dueTime: normalizeTimeValue(editingDraft.dueTime),
               dueEndTime: normalizeTimeValue(editingDraft.dueEndTime),
@@ -1751,8 +1763,13 @@ export function App() {
     return (
       <div className="estimate-control">
         <select
-          value={estimateUnit}
+          value={value ? estimateUnit : ""}
           onChange={(event) => {
+            if (!event.target.value) {
+              onChange("");
+              return;
+            }
+
             const unit = isEstimateUnit(event.target.value)
               ? event.target.value
               : "minutes";
@@ -1760,6 +1777,7 @@ export function App() {
             onChange(unit);
           }}
         >
+          <option value="">No estimate</option>
           {estimateUnits.map((unit) => (
             <option key={unit} value={unit}>
               {unit[0].toUpperCase() + unit.slice(1)}
@@ -1905,13 +1923,6 @@ export function App() {
             </label>
 
             <label>
-              <span>Duration</span>
-              {renderDurationControl(editingDraft.durationMinutes, (nextValue) =>
-                setEditingDraft(updateDraftDuration(editingDraft, nextValue)),
-              )}
-            </label>
-
-            <label>
               <span>Due</span>
               <div className="date-control">
                 <input
@@ -1950,6 +1961,23 @@ export function App() {
               {renderTimeSelect(editingDraft.dueEndTime, (nextValue) =>
                 setEditingDraft(updateDraftEndTime(editingDraft, nextValue)),
                 "No end time",
+              )}
+            </label>
+
+            <label>
+              <span>Actual duration</span>
+              {renderDurationControl(editingDraft.durationMinutes, (nextValue) =>
+                setEditingDraft(updateDraftDuration(editingDraft, nextValue)),
+              )}
+            </label>
+
+            <label>
+              <span>Duration estimate</span>
+              {renderEstimateControl(editingDraft.estimatedDuration, (nextValue) =>
+                setEditingDraft({
+                  ...editingDraft,
+                  estimatedDuration: nextValue,
+                }),
               )}
             </label>
 
@@ -2274,117 +2302,258 @@ export function App() {
               </button>
             </div>
 
-            <section className="menu-section">
-              <h3>Appearance</h3>
-              <label className="toggle-row">
-                <span>Dark mode</span>
-                <input
-                  type="checkbox"
-                  checked={isDarkMode}
-                  onChange={(event) => setIsDarkMode(event.target.checked)}
-                />
-              </label>
-              <label>
-                <span>Colour scheme</span>
-                <select
-                  value={colorScheme}
-                  onChange={(event) => {
-                    const nextScheme = isColorScheme(event.target.value)
-                      ? event.target.value
-                      : "cmyk";
+            <div className="menu-tabs" role="tablist" aria-label="Menu tabs">
+              <button
+                type="button"
+                className={menuTab === "settings" ? "active" : ""}
+                onClick={() => setMenuTab("settings")}
+              >
+                Settings
+              </button>
+              <button
+                type="button"
+                className={menuTab === "how-to" ? "active" : ""}
+                onClick={() => setMenuTab("how-to")}
+              >
+                How to use
+              </button>
+              <button
+                type="button"
+                className={menuTab === "info" ? "active" : ""}
+                onClick={() => setMenuTab("info")}
+              >
+                Info
+              </button>
+            </div>
 
-                    setColorScheme(nextScheme);
-                  }}
-                >
-                  {colorSchemeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Saturation</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={saturation}
-                  onChange={(event) => setSaturation(Number(event.target.value))}
-                />
-              </label>
-              <div className="range-row">
-                <span>{saturation}%</span>
-                <span>0% turns the interface grayscale.</span>
-              </div>
-              <div className="theme-preview" aria-hidden="true">
-                <span className="preview-swatch task-preview" />
-                <span className="preview-swatch action-preview" />
-              </div>
-            </section>
+            {menuTab === "settings" ? (
+              <>
+                <section className="menu-section">
+                  <h3>Appearance</h3>
+                  <label className="toggle-row">
+                    <span>Dark mode</span>
+                    <input
+                      type="checkbox"
+                      checked={isDarkMode}
+                      onChange={(event) => setIsDarkMode(event.target.checked)}
+                    />
+                  </label>
+                  <label>
+                    <span>Colour scheme</span>
+                    <select
+                      value={colorScheme}
+                      onChange={(event) => {
+                        const nextScheme = isColorScheme(event.target.value)
+                          ? event.target.value
+                          : "cmyk";
 
-            <section className="menu-section" aria-labelledby="account">
-              <h3 id="account">Account Sync</h3>
-              <p className="muted">
-                {user
-                  ? `Signed in as ${user.email}`
-                  : authLoading
-                    ? "Checking account..."
-                    : "Sign in to sync tasks between devices."}
-              </p>
-              {authMessage ? <p className="muted">{authMessage}</p> : null}
-              {user ? (
-                <button type="button" onClick={handleSignOut}>
-                  Sign out
-                </button>
-              ) : (
-                <form className="auth-form" onSubmit={handleSignIn}>
-                  <input
-                    type="email"
-                    value={authEmail}
-                    onChange={(event) => setAuthEmail(event.target.value)}
-                    placeholder="Email"
-                    required
-                  />
-                  <input
-                    type="password"
-                    value={authPassword}
-                    onChange={(event) => setAuthPassword(event.target.value)}
-                    placeholder="Password"
-                    required
-                    minLength={6}
-                  />
-                  <button type="submit" disabled={authSubmitting}>
-                    Sign in
+                        setColorScheme(nextScheme);
+                      }}
+                    >
+                      {colorSchemeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Saturation</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={saturation}
+                      onChange={(event) => setSaturation(Number(event.target.value))}
+                    />
+                  </label>
+                  <div className="range-row">
+                    <span>{saturation}%</span>
+                    <span>0% turns the interface grayscale.</span>
+                  </div>
+                  <div className="theme-preview" aria-hidden="true">
+                    <span className="preview-swatch task-preview" />
+                    <span className="preview-swatch action-preview" />
+                  </div>
+                </section>
+
+                <section className="menu-section" aria-labelledby="account">
+                  <h3 id="account">Account Sync</h3>
+                  <p className="muted">
+                    {user
+                      ? `Signed in as ${user.email}`
+                      : authLoading
+                        ? "Checking account..."
+                        : "Sign in to sync tasks between devices."}
+                  </p>
+                  {authMessage ? <p className="muted">{authMessage}</p> : null}
+                  {user ? (
+                    <button type="button" onClick={handleSignOut}>
+                      Sign out
+                    </button>
+                  ) : (
+                    <form className="auth-form" onSubmit={handleSignIn}>
+                      <input
+                        type="email"
+                        value={authEmail}
+                        onChange={(event) => setAuthEmail(event.target.value)}
+                        placeholder="Email"
+                        required
+                      />
+                      <input
+                        type="password"
+                        value={authPassword}
+                        onChange={(event) => setAuthPassword(event.target.value)}
+                        placeholder="Password"
+                        required
+                        minLength={6}
+                      />
+                      <button type="submit" disabled={authSubmitting}>
+                        Sign in
+                      </button>
+                      <button
+                        type="button"
+                        disabled={authSubmitting}
+                        onClick={startCreateAccountConfirmation}
+                      >
+                        Create account
+                      </button>
+                    </form>
+                  )}
+                </section>
+
+                <section className="menu-section">
+                  <h3>Backup</h3>
+                  <div className="backup-actions">
+                    <button type="button" onClick={exportBackup}>
+                      Export
+                    </button>
+                    <label className="import-button">
+                      <span>Import</span>
+                      <input
+                        type="file"
+                        accept="application/json"
+                        onChange={importBackup}
+                      />
+                    </label>
+                  </div>
+                </section>
+              </>
+            ) : null}
+
+            {menuTab === "how-to" ? (
+              <section className="menu-section help-section">
+                <h3>How to use</h3>
+                <div className="help-list">
+                  <p>
+                    <span className="help-sample add-sample">+</span>
+                    Add a new task. It opens the larger add panel.
+                  </p>
+                  <p>
+                    <span className="help-sample complete-sample">✓</span>
+                    Complete a task and move it to the archive.
+                  </p>
+                  <p>
+                    <span className="help-sample restore-sample">↩︎</span>
+                    Restore an archived task back to the active list.
+                  </p>
+                  <p>
+                    <span className="help-sample info-sample">i</span>
+                    Open task details, including notes, times, and completed date.
+                  </p>
+                  <p>
+                    <span className="help-sample edit-sample">✎</span>
+                    Edit a task. Delete is inside the edit panel.
+                  </p>
+                  <p>
+                    <span className="help-sample grip-sample">≡</span>
+                    Drag a task to a new position.
+                  </p>
+                  <p>
+                    <span className="help-sample flag-sample">⚑</span>
+                    Keep visible. Useful for important no-date tasks.
+                  </p>
+                  <p>
+                    <span className="help-sample chip-sample">H</span>
+                    Importance. H, M, and L mean high, medium, and low.
+                  </p>
+                  <p>
+                    <span className="help-sample chip-sample">2d</span>
+                    Days until due. Red is soon, yellow is close, blue is later.
+                  </p>
+                </div>
+              </section>
+            ) : null}
+
+            {menuTab === "info" ? (
+              <section className="menu-section info-section">
+                <h3>About Tile Todo</h3>
+                <p>
+                  Tile Todo is a sticky-note style task list for keeping the next
+                  few important things visible. It is designed for quick capture,
+                  simple priority, and an archive you can refer back to.
+                </p>
+                <p>
+                  Sorting balances due date, importance, urgency threshold,
+                  keep-visible flags, and your manual drag adjustments. Overdue,
+                  due-today, and urgent tasks are intentionally hard to push down.
+                </p>
+                <p>
+                  Account sync saves the same task list across devices when you
+                  are signed in. The app still keeps a local copy in the browser.
+                </p>
+              </section>
+            ) : null}
+          </aside>
+        </div>
+      ) : null}
+
+      {signupConfirmStep ? (
+        <div
+          className="confirm-backdrop"
+          role="presentation"
+          onClick={() => setSignupConfirmStep(null)}
+        >
+          <div
+            className="confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="signup-confirm-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {signupConfirmStep === "joke" ? (
+              <>
+                <h2 id="signup-confirm-title">Relax, it's a joke</h2>
+                <div className="confirm-actions">
+                  <button type="button" onClick={() => setSignupConfirmStep("second")}>
+                    OK
                   </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="signup-confirm-title">
+                  Are you sure you want to give Johnny Matejczyk all your data?
+                  Every last drop?
+                </h2>
+                <div className="confirm-actions">
                   <button
                     type="button"
-                    disabled={authSubmitting}
-                    onClick={handleCreateAccount}
+                    onClick={() =>
+                      signupConfirmStep === "first"
+                        ? setSignupConfirmStep("joke")
+                        : setSignupConfirmStep(null)
+                    }
                   >
-                    Create account
+                    {signupConfirmStep === "first" ? "No" : "Really no"}
                   </button>
-                </form>
-              )}
-            </section>
-
-            <section className="menu-section">
-              <h3>Backup</h3>
-              <div className="backup-actions">
-                <button type="button" onClick={exportBackup}>
-                  Export
-                </button>
-                <label className="import-button">
-                  <span>Import</span>
-                  <input
-                    type="file"
-                    accept="application/json"
-                    onChange={importBackup}
-                  />
-                </label>
-              </div>
-            </section>
-          </aside>
+                  <button type="button" onClick={createAccountAfterConfirmation}>
+                    Yes
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       ) : null}
 
@@ -2444,13 +2613,6 @@ export function App() {
                 </label>
 
                 <label>
-                  <span>Duration</span>
-                  {renderDurationControl(draft.durationMinutes, (nextValue) =>
-                    setDraft(updateDraftDuration(draft, nextValue)),
-                  )}
-                </label>
-
-                <label>
                   <span>Due</span>
                   <div className="date-control">
                     <input
@@ -2486,6 +2648,20 @@ export function App() {
                   {renderTimeSelect(draft.dueEndTime, (nextValue) =>
                     setDraft(updateDraftEndTime(draft, nextValue)),
                     "No end time",
+                  )}
+                </label>
+
+                <label>
+                  <span>Actual duration</span>
+                  {renderDurationControl(draft.durationMinutes, (nextValue) =>
+                    setDraft(updateDraftDuration(draft, nextValue)),
+                  )}
+                </label>
+
+                <label>
+                  <span>Duration estimate</span>
+                  {renderEstimateControl(draft.estimatedDuration, (nextValue) =>
+                    setDraft({ ...draft, estimatedDuration: nextValue }),
                   )}
                 </label>
 
