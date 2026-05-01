@@ -76,6 +76,7 @@ html[data-theme="dark"] {
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: hidden;
 }
 
 button,
@@ -83,6 +84,7 @@ input,
 select,
 textarea {
   font: inherit;
+  font-size: 16px;
 }
 
 button {
@@ -351,9 +353,7 @@ h3 {
 }
 
 .estimate-control {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.2fr);
-  gap: 0.4rem;
+  display: block;
 }
 
 .date-control button {
@@ -468,10 +468,6 @@ h3 {
   color: var(--archive-text);
 }
 
-.task[draggable="true"] {
-  cursor: grab;
-}
-
 .task-dragging {
   cursor: grabbing;
   opacity: 0.52;
@@ -479,9 +475,29 @@ h3 {
 }
 
 .task-drop-target {
-  outline: 3px dashed #171712;
-  outline-offset: -8px;
-  transform: translateY(4px) scale(0.97);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--warn) 78%, transparent),
+    0 0 28px color-mix(in srgb, var(--warn) 52%, transparent);
+  transform: scale(0.98);
+}
+
+.task-drop-target::before {
+  position: absolute;
+  top: 0.8rem;
+  bottom: 0.8rem;
+  width: 0.35rem;
+  border-radius: 999px;
+  background: var(--warn);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--warn) 80%, transparent);
+  content: "";
+}
+
+.task-drop-target.drop-before::before {
+  left: -0.4rem;
+}
+
+.task-drop-target.drop-after::before {
+  right: -0.4rem;
 }
 
 .task-featured .task-title {
@@ -648,7 +664,7 @@ h3 {
   min-height: 36px;
   place-items: center;
   border: 0;
-  border-radius: 999px;
+  border-radius: 14px;
   background: var(--surface);
   color: var(--text);
   font-size: 1.05rem;
@@ -678,6 +694,11 @@ h3 {
   color: #171712;
 }
 
+.restore-action {
+  background: var(--good);
+  color: #ffffff;
+}
+
 .edit-action {
   background: var(--magenta);
   color: var(--magenta-text);
@@ -691,6 +712,17 @@ h3 {
 .task-icon-action.danger {
   background: var(--bad);
   color: #ffffff;
+}
+
+.grip-action {
+  background: #171712;
+  color: #ffffff;
+  cursor: grab;
+  touch-action: none;
+}
+
+.grip-action:active {
+  cursor: grabbing;
 }
 
 .task-edit-form {
@@ -758,6 +790,20 @@ h3 {
 
 .edit-actions {
   grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.edit-actions button {
+  min-width: 118px;
+}
+
+.delete-edit-action {
+  margin-left: auto;
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #ffffff;
 }
 
 .empty-state {
@@ -802,7 +848,7 @@ h3 {
 
   :root,
   html[data-theme="dark"] {
-    --task-tile-size: calc((100vw - 1.55rem) / 2);
+    --task-tile-size: calc((100vw - 2.05rem) / 2);
   }
 
   .task-grid {
@@ -814,7 +860,7 @@ h3 {
   .task.add-panel {
     width: min(
       calc((var(--task-tile-size) * 2) + 0.55rem),
-      calc(100vw - 1rem)
+      100%
     );
     min-height: 72vh;
   }
@@ -823,7 +869,7 @@ h3 {
     grid-column: 1 / -1;
     width: min(
       calc((var(--task-tile-size) * 2) + 0.55rem),
-      calc(100vw - 1rem)
+      100%
     );
     min-height: 72vh;
   }
@@ -852,7 +898,7 @@ h3 {
     grid-column: 1 / -1;
     width: min(
       calc((var(--task-tile-size) * 2) + 0.55rem),
-      calc(100vw - 1rem)
+      100%
     );
     height: auto;
     min-height: 72vh;

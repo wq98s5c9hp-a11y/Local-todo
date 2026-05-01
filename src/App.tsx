@@ -13,6 +13,10 @@ import { supabase } from "./supabase";
 type TaskImportance = "low" | "medium" | "high";
 type TaskRepeat = "none" | "daily" | "weekly" | "monthly" | "yearly";
 type EstimateUnit = "minutes" | "hours" | "days" | "weeks";
+type DropPlacement = {
+  taskId: string;
+  placement: "before" | "after";
+};
 
 type Task = {
   id: string;
@@ -72,7 +76,7 @@ const MAX_MANUAL_BIAS = 144;
 const emptyDraft: TaskDraft = {
   title: "",
   importance: "medium",
-  estimatedDuration: "",
+  estimatedDuration: "minutes",
   dueDate: "",
   urgentBeforeDays: 1,
   details: "",
@@ -366,47 +370,25 @@ function getBiasForDesiredIndex(
   return clampManualBias(desiredScore - movedBaseScore);
 }
 
-function parseEstimate(value: string) {
-  const trimmedValue = value.trim();
-  const match = trimmedValue.match(/^(\d+(?:\.\d+)?)\s*([a-zA-Z]*)/);
+function parseEstimateUnit(value: string): EstimateUnit {
+  const normalizedValue = value.trim().toLowerCase();
 
-  if (!match) {
-    return {
-      amount: "",
-      unit: "minutes" as EstimateUnit,
-    };
+  if (normalizedValue.includes("week")) {
+    return "weeks";
   }
 
-  const rawUnit = match[2].toLowerCase();
-  const unit =
-    rawUnit.startsWith("week")
-      ? "weeks"
-      : rawUnit.startsWith("day")
-        ? "days"
-        : rawUnit.startsWith("hour") || rawUnit === "hr" || rawUnit === "hrs"
-          ? "hours"
-          : rawUnit.startsWith("min")
-            ? "minutes"
-            : "minutes";
-
-  return {
-    amount: match[1],
-    unit: unit as EstimateUnit,
-  };
-}
-
-function formatEstimate(amount: string, unit: EstimateUnit) {
-  const trimmedAmount = amount.trim();
-
-  if (!trimmedAmount) {
-    return "";
+  if (normalizedValue.includes("day")) {
+    return "days";
   }
 
-  const numericAmount = Number(trimmedAmount);
-  const unitLabel =
-    numericAmount === 1 ? unit.replace(/s$/, "") : unit;
+  if (
+    normalizedValue.includes("hour") ||
+    normalizedValue.includes("hr")
+  ) {
+    return "hours";
+  }
 
-  return `${trimmedAmount} ${unitLabel}`;
+  return "minutes";
 }
 
 function getUrgencyLabel(task: Task) {
@@ -428,7 +410,7 @@ function getUrgencyLabel(task: Task) {
     return "Urgent";
   }
 
-  return `${daysUntilDue}d`;
+  return "";
 }
 
 function getImportanceShortLabel(importance: TaskImportance) {
@@ -655,7 +637,7 @@ export function App() {
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => loadDarkMode());
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
-  const [dropTargetTaskId, setDropTargetTaskId] = useState<string | null>(null);
+  const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null);
   const loadingCloudRef = useRef(false);
   const completingTaskIdsRef = useRef<Set<string>>(new Set());
   const draftDueDateRef = useRef<HTMLInputElement | null>(null);
@@ -982,6 +964,12 @@ export function App() {
     }
   }
 
+  function confirmDeleteTask(taskId: string) {
+    if (window.confirm("Delete this task? This cannot be undone.")) {
+      deleteTask(taskId);
+    }
+  }
+
   function completeTask(taskId: string) {
     if (completingTaskIdsRef.current.has(taskId)) {
       return;
@@ -1081,7 +1069,11 @@ export function App() {
     );
   }
 
-  function moveTaskToPosition(taskId: string, targetTaskId: string) {
+  function moveTaskToPosition(
+    taskId: string,
+    targetTaskId: string,
+    placement: "before" | "after" = "before",
+  ) {
     if (taskId === targetTaskId) {
       return;
     }
@@ -1090,11 +1082,12 @@ export function App() {
     const orderedTasksWithoutMovedTask = activeTasks.filter(
       (task) => task.id !== taskId,
     );
-    const desiredIndex = orderedTasksWithoutMovedTask.findIndex(
+    const targetIndex = orderedTasksWithoutMovedTask.findIndex(
       (task) => task.id === targetTaskId,
     );
+    const desiredIndex = placement === "after" ? targetIndex + 1 : targetIndex;
 
-    if (!movedTask || desiredIndex < 0) {
+    if (!movedTask || targetIndex < 0) {
       return;
     }
 
@@ -1115,6 +1108,70 @@ export function App() {
           : task,
       ),
     );
+  }
+
+  function getDropPlacementFromPoint(
+    clientX: number,
+    clientY: number,
+    movedTaskId: string,
+  ): DropPlacement | null {
+    const taskElements = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-active-task='true']"),
+    ).filter((element) => element.dataset.taskId !== movedTaskId);
+
+    if (!taskElements.length) {
+      return null;
+    }
+
+    let nearestElement: HTMLElement | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    for (const element of taskElements) {
+      const rect = element.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const distance = Math.hypot(clientX - centerX, clientY - centerY);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestElement = element;
+      }
+    }
+
+    if (!nearestElement?.dataset.taskId) {
+      return null;
+    }
+
+    const rect = nearestElement.getBoundingClientRect();
+    const placement =
+      clientX < rect.left + rect.width / 2 ? "before" : "after";
+
+    return {
+      taskId: nearestElement.dataset.taskId,
+      placement,
+    };
+  }
+
+  function startGripMove(taskId: string) {
+    setDraggingTaskId(taskId);
+    setDropPlacement(null);
+  }
+
+  function updateGripMove(taskId: string, clientX: number, clientY: number) {
+    if (draggingTaskId !== taskId) {
+      return;
+    }
+
+    setDropPlacement(getDropPlacementFromPoint(clientX, clientY, taskId));
+  }
+
+  function finishGripMove(taskId: string) {
+    if (draggingTaskId === taskId && dropPlacement) {
+      moveTaskToPosition(taskId, dropPlacement.taskId, dropPlacement.placement);
+    }
+
+    setDraggingTaskId(null);
+    setDropPlacement(null);
   }
 
   function toggleTaskDetails(taskId: string) {
@@ -1186,29 +1243,18 @@ export function App() {
     value: string,
     onChange: (nextValue: string) => void,
   ) {
-    const estimate = parseEstimate(value);
+    const estimateUnit = parseEstimateUnit(value);
 
     return (
       <div className="estimate-control">
-        <input
-          type="number"
-          min="0"
-          step="1"
-          inputMode="decimal"
-          value={estimate.amount}
-          onChange={(event) =>
-            onChange(formatEstimate(event.target.value, estimate.unit))
-          }
-          placeholder="30"
-        />
         <select
-          value={estimate.unit}
+          value={estimateUnit}
           onChange={(event) => {
             const unit = isEstimateUnit(event.target.value)
               ? event.target.value
               : "minutes";
 
-            onChange(formatEstimate(estimate.amount, unit));
+            onChange(unit);
           }}
         >
           {estimateUnits.map((unit) => (
@@ -1238,55 +1284,16 @@ export function App() {
           isEditing ? "task-editing" : "",
           task.completed ? "task-completed" : "",
           draggingTaskId === task.id ? "task-dragging" : "",
-          dropTargetTaskId === task.id ? "task-drop-target" : "",
+          dropPlacement?.taskId === task.id ? "task-drop-target" : "",
+          dropPlacement?.taskId === task.id
+            ? `drop-${dropPlacement.placement}`
+            : "",
         ]
           .filter(Boolean)
           .join(" ")}
         key={task.id}
-        draggable={activeIndex !== null && !isEditing}
-        onDragStart={(event) => {
-          if (activeIndex === null || isEditing) {
-            return;
-          }
-
-          setDraggingTaskId(task.id);
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData("text/plain", task.id);
-        }}
-        onDragOver={(event) => {
-          if (activeIndex === null || !draggingTaskId || draggingTaskId === task.id) {
-            return;
-          }
-
-          event.preventDefault();
-          event.dataTransfer.dropEffect = "move";
-          setDropTargetTaskId(task.id);
-        }}
-        onDragLeave={() => {
-          if (dropTargetTaskId === task.id) {
-            setDropTargetTaskId(null);
-          }
-        }}
-        onDrop={(event) => {
-          if (activeIndex === null) {
-            return;
-          }
-
-          event.preventDefault();
-          const movedTaskId =
-            event.dataTransfer.getData("text/plain") || draggingTaskId;
-
-          if (movedTaskId) {
-            moveTaskToPosition(movedTaskId, task.id);
-          }
-
-          setDraggingTaskId(null);
-          setDropTargetTaskId(null);
-        }}
-        onDragEnd={() => {
-          setDraggingTaskId(null);
-          setDropTargetTaskId(null);
-        }}
+        data-task-id={task.id}
+        data-active-task={activeIndex !== null ? "true" : undefined}
         style={
           {
             viewTransitionName: `task-${task.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
@@ -1325,6 +1332,9 @@ export function App() {
               <span>Task</span>
               <input
                 autoFocus
+                spellCheck
+                autoCorrect="on"
+                autoCapitalize="sentences"
                 value={editingDraft.title}
                 onChange={(event) =>
                   setEditingDraft({
@@ -1428,6 +1438,9 @@ export function App() {
             <label className="full-field">
               <span>Details</span>
               <textarea
+                spellCheck
+                autoCorrect="on"
+                autoCapitalize="sentences"
                 value={editingDraft.details}
                 onChange={(event) =>
                   setEditingDraft({
@@ -1444,6 +1457,13 @@ export function App() {
               <button type="submit">Save</button>
               <button type="button" onClick={cancelEditing}>
                 Cancel
+              </button>
+              <button
+                className="delete-edit-action"
+                type="button"
+                onClick={() => confirmDeleteTask(task.id)}
+              >
+                Delete
               </button>
             </div>
           </form>
@@ -1492,14 +1512,8 @@ export function App() {
                   </div>
                 ) : null}
                 <div className="meta-row meta-extra-row">
-                  {task.estimatedDuration ? (
-                    <span>{task.estimatedDuration}</span>
-                  ) : null}
                   {task.repeat !== "none" ? (
                     <span>{formatRepeat(task.repeat)}</span>
-                  ) : null}
-                  {task.completedAt ? (
-                    <span>Completed {formatDate(task.completedAt)}</span>
                   ) : null}
                 </div>
               </div>
@@ -1515,6 +1529,9 @@ export function App() {
                       Becomes urgent {task.urgentBeforeDays} day
                       {task.urgentBeforeDays === 1 ? "" : "s"} before due date.
                     </p>
+                  ) : null}
+                  {task.completedAt ? (
+                    <p className="muted">Completed {formatDate(task.completedAt)}</p>
                   ) : null}
                 </div>
               ) : null}
@@ -1560,15 +1577,35 @@ export function App() {
               >
                 ✎
               </button>
-              <button
-                className="task-icon-action danger"
-                type="button"
-                aria-label="Delete task"
-                title="Delete"
-                onClick={() => deleteTask(task.id)}
-              >
-                ×
-              </button>
+              {activeIndex !== null ? (
+                <button
+                  className="task-icon-action grip-action"
+                  type="button"
+                  aria-label="Move task"
+                  title="Move"
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                    startGripMove(task.id);
+                  }}
+                  onPointerMove={(event) =>
+                    updateGripMove(task.id, event.clientX, event.clientY)
+                  }
+                  onPointerUp={(event) => {
+                    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                      event.currentTarget.releasePointerCapture(event.pointerId);
+                    }
+
+                    finishGripMove(task.id);
+                  }}
+                  onPointerCancel={() => {
+                    setDraggingTaskId(null);
+                    setDropPlacement(null);
+                  }}
+                >
+                  ≡
+                </button>
+              ) : null}
             </div>
           </>
         )}
@@ -1728,6 +1765,9 @@ export function App() {
                   <span>Task</span>
                   <input
                     autoFocus
+                    spellCheck
+                    autoCorrect="on"
+                    autoCapitalize="sentences"
                     value={draft.title}
                     onChange={(event) =>
                       setDraft({ ...draft, title: event.target.value })
@@ -1825,6 +1865,9 @@ export function App() {
                   <label>
                     <span>Important info</span>
                     <textarea
+                      spellCheck
+                      autoCorrect="on"
+                      autoCapitalize="sentences"
                       value={draft.details}
                       onChange={(event) =>
                         setDraft({ ...draft, details: event.target.value })

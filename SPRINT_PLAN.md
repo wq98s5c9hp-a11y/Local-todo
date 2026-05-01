@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 15 executed
+Status: Sprint 16 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -248,3 +248,20 @@ Goal: Make time estimates clearer and make task ordering easier to control witho
 - Add drag-style manual reordering for active tiles.
 - Prevent exact score ties with a tiny stable tie-breaker.
 - Add daily to-dos, push notifications, and desktop display to the roadmap only.
+
+## Sprint 16: Tile Action Cleanup And Mobile Movement
+
+Goal: Tighten task tile controls, prevent mobile zoom issues, and make movement/delete/archive behavior clearer.
+
+## Completed Scope
+
+- Made restore green on completed task tiles.
+- Moved completed date out of the tile and into the expanded info area.
+- Changed estimate input to a simple unit dropdown.
+- Removed estimate display from task tiles.
+- Removed delete from the main tile actions and moved delete into edit with confirmation.
+- Added a grip control for pointer-based tile moving on desktop and mobile.
+- Removed repeated days-until-due from the priority/urgency row.
+- Made icon buttons rounded squares while keeping text/info chips pill-shaped.
+- Added browser spellcheck/autocorrect hints to task title and details fields.
+- Added future archive-window behavior to the roadmap only.

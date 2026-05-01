@@ -459,3 +459,32 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 16 Approval
+
+- CEO requested restore be green and completed dates move into the expanded info section.
+- CEO requested edit save/cancel buttons be wider and mobile edit panels stop causing page zoom.
+- CEO requested delete move out of the main tile and into edit with confirmation.
+- CEO requested a grip-based movement control instead of relying on native drag, especially for mobile.
+- CEO requested estimated time become a simple unit dropdown and not display on tiles.
+- CEO requested icon buttons become rounded squares while text/info chips remain pills.
+- CEO requested duplicate days-until-due display be cleaned up.
+- CEO requested archive-window behavior be added to the roadmap but not implemented yet.
+
+### Sprint 16 Implementation Changes
+
+- Changed completed restore action to green.
+- Removed completed date and estimate text from compact tile metadata.
+- Added completed date to the expanded details area.
+- Changed estimate editing to a minutes/hours/days/weeks dropdown.
+- Added spellcheck/autocorrect hints to task title and details fields.
+- Replaced main-tile delete with a grip movement button.
+- Added pointer-based grip movement with before/after drop highlighting.
+- Moved destructive delete into the edit panel with browser confirmation.
+- Tightened mobile sizing and 16px form controls to reduce iOS zoom.
+- Added the future archive-window concept to the roadmap.
+
+### Sprint 16 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

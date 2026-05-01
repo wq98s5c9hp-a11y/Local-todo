@@ -320,6 +320,7 @@ Completed features:
 - Daily to-dos that can be checked off every day without living in the main task tile list.
 - Push notifications.
 - Desktop display mode for an always-visible view.
+- Move older archive tasks into a menu-accessible archive window while keeping recent archive items under the main list.
 
 ## Later Ideas
 
@@ -344,6 +345,7 @@ These are intentionally outside version 1:
 - Daily to-dos outside the main tile list
 - Push notifications
 - Desktop display mode
+- Menu archive window with only recent completed tasks visible below the main list
 
 Any later idea should be discussed before implementation.
 
