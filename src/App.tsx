@@ -697,8 +697,20 @@ export function App() {
   }
 
   function closeAddTask() {
-    setIsAddTaskOpen(false);
-    setDraft(emptyDraft);
+    const documentWithTransition = document as Document & {
+      startViewTransition?: (callback: () => void) => void;
+    };
+
+    if (!documentWithTransition.startViewTransition) {
+      setIsAddTaskOpen(false);
+      setDraft(emptyDraft);
+      return;
+    }
+
+    documentWithTransition.startViewTransition(() => {
+      setIsAddTaskOpen(false);
+      setDraft(emptyDraft);
+    });
   }
 
   async function handleCreateAccount() {
@@ -760,7 +772,7 @@ export function App() {
       return;
     }
 
-    persistTasks([createTaskFromDraft(draft), ...tasks]);
+    persistTasksWithTransition([createTaskFromDraft(draft), ...tasks]);
     setDraft(emptyDraft);
     setIsAddTaskOpen(false);
   }
@@ -1377,7 +1389,15 @@ export function App() {
 
         <div className="task-grid active-task-grid">
           {isAddTaskOpen ? (
-            <section className="task add-panel" aria-labelledby="add-task">
+            <section
+              className="task add-panel"
+              aria-labelledby="add-task"
+              style={
+                {
+                  viewTransitionName: "add-task-tile",
+                } as CSSProperties
+              }
+            >
               <div className="panel-header">
                 <h2 id="add-task">Add Task</h2>
                 <button type="button" onClick={closeAddTask}>
@@ -1507,7 +1527,25 @@ export function App() {
             <button
               className="task add-task-trigger"
               type="button"
-              onClick={() => setIsAddTaskOpen(true)}
+              style={
+                {
+                  viewTransitionName: "add-task-tile",
+                } as CSSProperties
+              }
+              onClick={() => {
+                const documentWithTransition = document as Document & {
+                  startViewTransition?: (callback: () => void) => void;
+                };
+
+                if (!documentWithTransition.startViewTransition) {
+                  setIsAddTaskOpen(true);
+                  return;
+                }
+
+                documentWithTransition.startViewTransition(() => {
+                  setIsAddTaskOpen(true);
+                });
+              }}
             >
               <span className="add-plus">+</span>
               <span className="add-task-label">Add task</span>

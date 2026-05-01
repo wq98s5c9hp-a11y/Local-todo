@@ -331,3 +331,26 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 11 Approval
+
+- CEO requested the add tile to animate/grow into a larger form panel on top of the grid flow.
+- CEO requested the opened form to be no wider than two task tiles.
+- CEO requested the opened form to grow vertically enough for the controls.
+- CEO requested create/close to shrink the form back into the grid spot as tiles shift.
+- CEO requested the pencil button on magenta tiles to be cyan for contrast.
+
+### Sprint 11 Implementation Changes
+
+- Added a shared view transition name for the add tile and expanded add form.
+- Changed the expanded add form to span two tile columns instead of behaving like a single fixed tile.
+- Let the expanded add form grow vertically with a larger minimum height.
+- Added view-transition behavior when closing the add form.
+- Kept create-task transition in the grid flow when a new task is created.
+- Changed the highlighted tile edit button to cyan.
+- Made move buttons solid black.
+
+### Sprint 11 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

@@ -259,6 +259,20 @@ Completed features:
 - Changed the add submit action to `Create task`.
 - Made task action buttons solid colors with better tile fit.
 
+## Stage 18: Expanding Add Tile
+
+Status: Complete
+
+Make the add-task interaction feel like a tile growing into a form instead of a cramped card.
+
+Completed features:
+
+- Add tile and add form share a view-transition identity for supported browsers.
+- Opened add form expands to two tile widths.
+- Opened add form grows vertically for its fields and controls.
+- Closing or creating a task transitions back into the grid flow.
+- Edit pencil button turns cyan on magenta highlighted tiles.
+
 ## Later Ideas
 
 These are intentionally outside version 1:

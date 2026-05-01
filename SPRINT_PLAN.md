@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 10 executed
+Status: Sprint 11 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -175,3 +175,15 @@ Goal: Make the tile grid easier to use on mobile and make task creation feel lik
 - Changed add submit copy to `Create task`.
 - Made tile action buttons solid colors.
 - Adjusted task action buttons to fit better inside tiles.
+
+## Sprint 11: Expanding Add Tile
+
+Goal: Make task creation feel like the add tile expands into a full form and then returns to the grid.
+
+## Completed Scope
+
+- Added a shared view transition between the add tile and add form.
+- Changed the add form to span two tile widths.
+- Let the add form grow vertically to fit all inputs and controls.
+- Animated closing and create-task transitions where supported.
+- Made the edit pencil cyan on magenta highlighted tiles.
