@@ -1,5 +1,5 @@
 :root {
-  --app-saturation: 75%;
+  --app-saturation: 90%;
   --bg: #f7f3e8;
   --surface: #ffffff;
   --surface-strong: #fffdf2;
@@ -506,8 +506,9 @@ h3 {
   width: 84px;
   height: 84px;
   place-items: center;
-  border: 3px solid color-mix(in srgb, var(--magenta-text) 78%, transparent);
+  border: 3px solid currentColor;
   border-radius: 999px;
+  color: var(--magenta-text);
   font-size: 4rem;
   font-weight: 500;
   line-height: 0.8;
@@ -891,8 +892,7 @@ h3 {
   color: #ffffff;
 }
 
-.restore-action,
-.details-action {
+.restore-action {
   background: var(--warn);
   color: #171712;
 }
@@ -902,12 +902,14 @@ h3 {
   color: #ffffff;
 }
 
-.edit-action {
+.edit-action,
+.details-action {
   background: color-mix(in srgb, var(--magenta) var(--app-saturation), #8d8d8d);
   color: var(--magenta-text);
 }
 
-.task-featured .edit-action {
+.task-featured .edit-action,
+.task-featured .details-action {
   background: color-mix(in srgb, var(--task-normal) var(--app-saturation), #8d8d8d);
   color: var(--task-text);
 }
@@ -947,6 +949,18 @@ h3 {
   min-height: min(72vh, 680px);
   background: var(--task-normal);
   color: var(--task-text);
+  overflow: visible;
+  z-index: 2;
+}
+
+.task-info-open {
+  grid-column: span 2;
+  width: min(
+    calc((var(--task-tile-size) * 2) + 0.75rem),
+    calc(100vw - 1rem)
+  );
+  height: auto;
+  min-height: min(52vh, 520px);
   overflow: visible;
   z-index: 2;
 }
@@ -1061,7 +1075,7 @@ h3 {
 
 @media (max-width: 760px) {
   .app-shell {
-    width: min(100% - 1.25rem, 920px);
+    width: min(100% - 1rem, 920px);
     padding-top: 0.75rem;
   }
 
@@ -1080,8 +1094,9 @@ h3 {
   }
 
   :root,
-  html[data-theme="dark"] {
-    --task-tile-size: calc((100vw - 2.45rem) / 2);
+  html[data-theme],
+  html[data-theme][data-scheme] {
+    --task-tile-size: calc((100vw - 1.5rem) / 2);
   }
 
   .task-grid {
@@ -1105,6 +1120,16 @@ h3 {
       100%
     );
     min-height: 72vh;
+  }
+
+  .task-info-open {
+    grid-column: 1 / -1;
+    width: min(
+      calc((var(--task-tile-size) * 2) + 0.5rem),
+      100%
+    );
+    height: auto;
+    min-height: 52vh;
   }
 
   .task-form,

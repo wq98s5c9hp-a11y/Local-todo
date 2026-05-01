@@ -537,3 +537,30 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 19 Approval
+
+- CEO requested the add plus symbol and circle use the same colour across all colour themes.
+- CEO requested the header logo match the browser-tab/icon graphic.
+- CEO requested the app name change to Tile Todo.
+- CEO requested info/details open up the tile like edit does.
+- CEO requested the info button use the same contrasting colour as edit.
+- CEO requested mobile light and dark tile sizing match, with side gaps equal to the gap between tiles.
+- CEO requested a future sort button/function be added to the roadmap only.
+- CEO requested default saturation start at 90.
+
+### Sprint 19 Implementation Changes
+
+- Renamed the header, document title, iOS app title, and manifest name to Tile Todo.
+- Pointed the header logo at the PNG app icon asset.
+- Changed add plus circle and plus symbol to share `currentColor`.
+- Added a `task-info-open` expanded state so info/details spans two tile widths and grows vertically.
+- Restyled details/info action to match the edit action contrast colour.
+- Fixed mobile tile-size variable specificity so dark theme no longer falls back to desktop sizing.
+- Changed default saturation fallback and root CSS default to 90%.
+- Added future sort controls to the roadmap without implementing them.
+
+### Sprint 19 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

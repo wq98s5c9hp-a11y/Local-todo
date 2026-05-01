@@ -267,7 +267,7 @@ function loadSaturation() {
   const savedSaturation = Number(window.localStorage.getItem(SATURATION_STORAGE_KEY));
 
   if (!Number.isFinite(savedSaturation)) {
-    return 75;
+    return 90;
   }
 
   return Math.max(0, Math.min(100, Math.round(savedSaturation)));
@@ -1421,6 +1421,7 @@ export function App() {
           "task",
           isFeatured ? "task-featured" : "",
           isEditing ? "task-editing" : "",
+          isExpanded && !isEditing ? "task-info-open" : "",
           task.completed ? "task-completed" : "",
           draggingTaskId === task.id ? "task-dragging" : "",
           dropPlacement?.taskId === task.id ? "task-drop-target" : "",
@@ -1756,9 +1757,14 @@ export function App() {
     <main className="app-shell">
       <header className="app-header">
         <div className="brand-block">
-          <img className="app-logo" src="/icon.svg" alt="" aria-hidden="true" />
+          <img
+            className="app-logo"
+            src="/icon-512.png?v=2"
+            alt=""
+            aria-hidden="true"
+          />
           <div>
-            <h1>Todo</h1>
+            <h1>Tile Todo</h1>
             <p className="save-status">
               {user ? "Synced account" : "Local mode"}
             </p>

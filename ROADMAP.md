@@ -321,6 +321,7 @@ Completed features:
 - Push notifications.
 - Desktop display mode for an always-visible view.
 - Move older archive tasks into a menu-accessible archive window while keeping recent archive items under the main list.
+- Sort controls near the menu for due date, urgency, estimated time, and other task metrics, plus a master sort that returns to the user's manually arranged order.
 
 ## Later Ideas
 
@@ -346,6 +347,7 @@ These are intentionally outside version 1:
 - Push notifications
 - Desktop display mode
 - Menu archive window with only recent completed tasks visible below the main list
+- Sort button with due date, urgency, estimated time, other metric sorts, and a master/manual-order sort
 
 Any later idea should be discussed before implementation.
 

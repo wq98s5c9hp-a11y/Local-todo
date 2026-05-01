@@ -1,6 +1,6 @@
 {
-  "name": "Local Todo",
-  "short_name": "Todo",
+  "name": "Tile Todo",
+  "short_name": "Tile Todo",
   "description": "A focused personal to-do list.",
   "start_url": "/",
   "display": "standalone",

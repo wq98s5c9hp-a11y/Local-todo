@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 18 executed
+Status: Sprint 19 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -298,3 +298,18 @@ Goal: Make mobile tiles fit cleanly and replace the less distinct colour schemes
 - Removed visible tile borders.
 - Tightened mobile tile sizing so two tiles fit with extra breathing room.
 - Reduced pill text/padding and kept date chips on one row.
+
+## Sprint 19: Tile Todo Naming And Info Panel Polish
+
+Goal: Make the brand/UI naming consistent and make mobile tile spacing reliable across light and dark themes.
+
+## Completed Scope
+
+- Renamed the visible app and metadata to Tile Todo.
+- Changed the header logo to use the same PNG app icon asset as installed/browser icon contexts.
+- Made the add plus and plus circle use the same colour in every theme.
+- Changed the info action to use the same contrast colour as edit.
+- Made info/details expansion turn into a larger two-tile panel like edit.
+- Fixed dark-mode mobile tile sizing by overriding the tile-size variable at matching specificity.
+- Set default saturation to 90%.
+- Added future sort controls to the roadmap without implementing them.
