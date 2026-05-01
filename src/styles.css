@@ -295,7 +295,7 @@ h3 {
 .add-plus {
   display: inline-grid;
   position: absolute;
-  top: 50%;
+  top: 47%;
   left: 50%;
   width: 84px;
   height: 84px;
@@ -304,13 +304,13 @@ h3 {
   border-radius: 999px;
   font-size: 4rem;
   font-weight: 500;
-  line-height: 1;
+  line-height: 0.8;
   transform: translate(-50%, -50%);
 }
 
 .add-task-label {
   position: absolute;
-  bottom: 1rem;
+  bottom: 0.65rem;
   left: 50%;
   display: inline-flex;
   min-height: 2rem;
@@ -414,7 +414,7 @@ h3 {
   height: auto;
   max-height: none;
   padding: 1rem;
-  border-color: var(--magenta);
+  border-color: transparent;
   border-radius: 18px;
   background: var(--task-normal);
   color: var(--task-text);
@@ -486,17 +486,28 @@ h3 {
 }
 
 .task-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  display: grid;
+  gap: 0.25rem;
   margin-top: 0.35rem;
   color: color-mix(in srgb, currentColor 80%, transparent);
   font-size: 0.8rem;
 }
 
+.meta-row {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.meta-extra-row {
+  font-size: 0.75rem;
+}
+
 .importance-token,
 .urgency,
-.date-chip {
+.date-chip,
+.due-days-chip {
   display: inline-flex;
   min-height: 1.45rem;
   align-items: center;
@@ -547,6 +558,18 @@ h3 {
 
 .date-chip {
   color: #ffffff;
+}
+
+.due-days-chip.blue {
+  color: var(--task-normal);
+}
+
+.due-days-chip.yellow {
+  color: var(--warn);
+}
+
+.due-days-chip.red {
+  color: var(--bad);
 }
 
 .overdue-icon {
@@ -603,7 +626,7 @@ h3 {
   min-height: 36px;
   place-items: center;
   border: 0;
-  border-radius: 9px;
+  border-radius: 999px;
   background: var(--surface);
   color: var(--text);
   font-size: 1.05rem;
@@ -775,6 +798,7 @@ h3 {
   }
 
   .task-editing {
+    grid-column: 1 / -1;
     width: min(
       calc((var(--task-tile-size) * 2) + 0.55rem),
       calc(100vw - 1rem)
@@ -799,6 +823,17 @@ h3 {
     width: var(--task-tile-size);
     height: var(--task-tile-size);
     align-items: stretch;
+  }
+
+  .task.add-panel,
+  .task.task-editing {
+    grid-column: 1 / -1;
+    width: min(
+      calc((var(--task-tile-size) * 2) + 0.55rem),
+      calc(100vw - 1rem)
+    );
+    height: auto;
+    min-height: 72vh;
   }
 
   .task-actions {

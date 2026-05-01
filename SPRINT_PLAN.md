@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 13 executed
+Status: Sprint 14 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -220,3 +220,18 @@ Goal: Make the task tiles behave more like physical sticky notes and polish butt
 - Centered the add-task plus in the tile.
 - Made add/create controls use magenta capsule styling.
 - Made edit save use the opposite cyan/magenta color of the tile being edited.
+
+## Sprint 14: Due-Aware Sorting And Tile Metadata
+
+Goal: Make tiles easier to scan and make sorting behave according to urgency and importance instead of newest-created order.
+
+## Completed Scope
+
+- Put due-date chips on their own row under importance/urgency.
+- Added days-until-due chips before month/day chips.
+- Added blue/yellow/red due timing colors.
+- Removed the expanded add form magenta outline.
+- Fixed mobile edit panels to span two tile widths.
+- Kept completed restore as a plain return arrow.
+- Reworked sorting around due score, urgency threshold, importance, and bounded manual bias.
+- Added requested category/calendar/sharing ideas to the roadmap without implementing them.

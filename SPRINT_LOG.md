@@ -409,3 +409,31 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 14 Approval
+
+- CEO requested date chips always appear on a line below the priority/urgency line.
+- CEO requested a days-until-due pill before the month/day date chips.
+- CEO requested days-until-due color states: blue for more than a week, yellow for about a week to 3 days, and red for 3 days or less.
+- CEO requested mobile edit panels expand to two tile widths.
+- CEO requested completed-task restore icon stay as a plain return arrow.
+- CEO requested a stronger sorting algorithm based on due date, urgency, importance, and bounded manual bias.
+- CEO requested category, category-field-toggle, calendar sync, and category-sharing ideas be added to the roadmap but not implemented.
+- CEO requested add tile label/plus alignment and add panel outline fixes from browser comments.
+
+### Sprint 14 Implementation Changes
+
+- Split tile metadata into a priority/urgency row and a separate date row.
+- Added days-until-due chips before month/day date chips.
+- Added blue/yellow/red due timing chip colors.
+- Adjusted add tile plus and label placement.
+- Removed the magenta border from the expanded add form.
+- Fixed mobile expanded edit panels to span two tile widths.
+- Forced the completed restore icon to use a text-style return arrow.
+- Replaced absolute manual ordering with a bounded manual bias inside a due-date/urgency/importance score.
+- Added future roadmap items for categories, master urgent category view, category field toggles, calendar sync, and shared categories.
+
+### Sprint 14 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

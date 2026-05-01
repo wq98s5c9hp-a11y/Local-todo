@@ -310,6 +310,13 @@ Completed features:
 
 - Spellcheck for task entry and notes.
 - Better expanded more-info display for dense task details.
+- Categories such as `Main`, `Fun Projects`, and `Buy`.
+- A master urgent view for tasks due in the next 3 days across all categories.
+- Desktop category columns that can scroll side-to-side.
+- Mobile category swiping.
+- Per-category task field toggles, such as hiding due date for a category.
+- Calendar sync.
+- Shared categories with other accounts for shared to-do lists.
 
 ## Later Ideas
 
@@ -326,6 +333,11 @@ These are intentionally outside version 1:
 - Desktop always-on packaging
 - Spellcheck
 - Better more-info display
+- Categories
+- Master urgent cross-category view
+- Category field toggles
+- Calendar sync
+- Shared categories / shared to-do lists
 
 Any later idea should be discussed before implementation.
 

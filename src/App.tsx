@@ -65,6 +65,8 @@ const THEME_STORAGE_KEY = "local-first-todo.theme";
 const BACKUP_VERSION = 1;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_DUE_DAYS = 365;
+const MANUAL_BIAS_STEP = 24;
+const MAX_MANUAL_BIAS = 144;
 
 const emptyDraft: TaskDraft = {
   title: "",
@@ -113,13 +115,16 @@ function normalizeUrgentBeforeDays(value: unknown) {
 }
 
 function normalizeSortOrder(value: unknown) {
+  const clampSortOrder = (sortOrder: number) =>
+    Math.max(-MAX_MANUAL_BIAS, Math.min(MAX_MANUAL_BIAS, sortOrder));
+
   if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
+    return clampSortOrder(value);
   }
 
   if (typeof value === "string") {
     const parsedValue = Number(value);
-    return Number.isFinite(parsedValue) ? parsedValue : null;
+    return Number.isFinite(parsedValue) ? clampSortOrder(parsedValue) : null;
   }
 
   return null;
@@ -259,23 +264,59 @@ function getDaysUntilDue(dueDate: string) {
   return Math.ceil((date.getTime() - todayStart.getTime()) / DAY_MS);
 }
 
-function getTaskScore(task: Task) {
-  const daysUntilDue = getDaysUntilDue(task.dueDate);
-  const importanceScore = importanceWeight[task.importance] * 10;
+function getManualBias(task: Task) {
+  return task.sortOrder ?? 0;
+}
 
+function getDueScore(daysUntilDue: number | null) {
   if (daysUntilDue === null) {
-    return importanceScore;
+    return 0;
   }
 
   if (daysUntilDue < 0) {
-    return importanceScore + 1000;
+    return 2200 + Math.min(365, Math.abs(daysUntilDue)) * 4;
   }
 
-  if (daysUntilDue <= task.urgentBeforeDays) {
-    return importanceScore + 500 + Math.max(0, 90 - daysUntilDue);
+  if (daysUntilDue === 0) {
+    return 1800;
   }
 
-  return importanceScore + Math.max(0, 30 - daysUntilDue);
+  if (daysUntilDue === 1) {
+    return 1350;
+  }
+
+  if (daysUntilDue <= 3) {
+    return 950 - daysUntilDue * 80;
+  }
+
+  if (daysUntilDue <= 7) {
+    return 520 - daysUntilDue * 25;
+  }
+
+  if (daysUntilDue <= 14) {
+    return 260 - daysUntilDue * 8;
+  }
+
+  if (daysUntilDue <= 30) {
+    return 95 - daysUntilDue * 1.5;
+  }
+
+  return Math.max(0, 35 - daysUntilDue * 0.35);
+}
+
+function getTaskBaseScore(task: Task) {
+  const daysUntilDue = getDaysUntilDue(task.dueDate);
+  const importanceScore = (importanceWeight[task.importance] - 1) * 34;
+  const urgentThresholdScore =
+    daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= task.urgentBeforeDays
+      ? 120
+      : 0;
+
+  return getDueScore(daysUntilDue) + importanceScore + urgentThresholdScore;
+}
+
+function getTaskScore(task: Task) {
+  return getTaskBaseScore(task) + getManualBias(task);
 }
 
 function getUrgencyLabel(task: Task) {
@@ -317,6 +358,40 @@ function getDueDateParts(value: string) {
   };
 }
 
+function getDueDaysChip(task: Task) {
+  const daysUntilDue = getDaysUntilDue(task.dueDate);
+
+  if (daysUntilDue === null) {
+    return null;
+  }
+
+  if (daysUntilDue < 0) {
+    return {
+      label: "late",
+      tone: "red",
+    };
+  }
+
+  if (daysUntilDue <= 3) {
+    return {
+      label: `${daysUntilDue}d`,
+      tone: "red",
+    };
+  }
+
+  if (daysUntilDue <= 7) {
+    return {
+      label: `${daysUntilDue}d`,
+      tone: "yellow",
+    };
+  }
+
+  return {
+    label: `${daysUntilDue}d`,
+    tone: "blue",
+  };
+}
+
 function formatDate(value?: string) {
   if (!value) {
     return "";
@@ -350,7 +425,7 @@ function createTaskFromDraft(draft: TaskDraft): Task {
     estimatedDuration: draft.estimatedDuration.trim(),
     dueDate: normalizeDueDate(draft.dueDate),
     urgentBeforeDays: draft.urgentBeforeDays,
-    sortOrder: Date.now() * -1,
+    sortOrder: 0,
     details: draft.details.trim(),
     repeat: draft.repeat,
     completed: false,
@@ -409,7 +484,7 @@ function createNextRepeatingTask(task: Task, completedAt: string): Task | null {
     completed: false,
     completedAt: undefined,
     dueDate: normalizeDueDate(formatDateInputValue(nextDueDate)),
-    sortOrder: Date.now() * -1,
+    sortOrder: 0,
     createdAt: completedAt,
     updatedAt: completedAt,
   };
@@ -542,22 +617,6 @@ export function App() {
       tasks
         .filter((task) => !task.completed)
         .sort((firstTask, secondTask) => {
-          if (
-            firstTask.sortOrder !== null &&
-            secondTask.sortOrder !== null &&
-            firstTask.sortOrder !== secondTask.sortOrder
-          ) {
-            return firstTask.sortOrder - secondTask.sortOrder;
-          }
-
-          if (firstTask.sortOrder !== null && secondTask.sortOrder === null) {
-            return -1;
-          }
-
-          if (firstTask.sortOrder === null && secondTask.sortOrder !== null) {
-            return 1;
-          }
-
           const scoreDifference = getTaskScore(secondTask) - getTaskScore(firstTask);
 
           if (scoreDifference !== 0) {
@@ -576,22 +635,6 @@ export function App() {
     () => tasks.filter((task) => task.completed),
     [tasks],
   );
-
-  function normalizeActiveOrder(orderedActiveTasks: Task[]) {
-    const orderById = new Map(
-      orderedActiveTasks.map((task, index) => [task.id, index + 1]),
-    );
-
-    return tasks.map((task) =>
-      orderById.has(task.id)
-        ? {
-            ...task,
-            sortOrder: orderById.get(task.id) ?? task.sortOrder,
-            updatedAt: new Date().toISOString(),
-          }
-        : task,
-    );
-  }
 
   async function syncCloudTasks(nextTasks: Task[], currentUser = user) {
     if (!currentUser || loadingCloudRef.current) {
@@ -893,7 +936,7 @@ export function App() {
               ...task,
               completed: false,
               completedAt: undefined,
-              sortOrder: Date.now() * -1,
+              sortOrder: 0,
               updatedAt: now,
             }
           : task,
@@ -914,13 +957,41 @@ export function App() {
       return;
     }
 
-    const reorderedTasks = [...activeTasks];
-    [reorderedTasks[currentIndex], reorderedTasks[nextIndex]] = [
-      reorderedTasks[nextIndex],
-      reorderedTasks[currentIndex],
-    ];
+    const movedTask = activeTasks[currentIndex];
+    const targetTask = activeTasks[nextIndex];
+    const movedBaseScore = getTaskBaseScore(movedTask);
+    const targetScore = getTaskScore(targetTask);
+    const nextBias =
+      direction === "up"
+        ? targetScore - movedBaseScore + 1
+        : targetScore - movedBaseScore - 1;
+    const boundedBias = Math.max(
+      -MAX_MANUAL_BIAS,
+      Math.min(MAX_MANUAL_BIAS, nextBias),
+    );
+    const adjustedBias =
+      boundedBias === getManualBias(movedTask)
+        ? Math.max(
+            -MAX_MANUAL_BIAS,
+            Math.min(
+              MAX_MANUAL_BIAS,
+              getManualBias(movedTask) +
+                (direction === "up" ? MANUAL_BIAS_STEP : -MANUAL_BIAS_STEP),
+            ),
+          )
+        : boundedBias;
 
-    persistTasksWithTransition(normalizeActiveOrder(reorderedTasks));
+    persistTasksWithTransition(
+      tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              sortOrder: adjustedBias,
+              updatedAt: new Date().toISOString(),
+            }
+          : task,
+      ),
+    );
   }
 
   function toggleTaskDetails(taskId: string) {
@@ -993,6 +1064,7 @@ export function App() {
     const isExpanded = expandedTaskIds.has(task.id);
     const urgencyLabel = getUrgencyLabel(task);
     const dueDateParts = getDueDateParts(task.dueDate);
+    const dueDaysChip = getDueDaysChip(task);
     const canMoveUp = activeIndex !== null && activeIndex > 0;
     const canMoveDown = activeIndex !== null && activeIndex < activeTasks.length - 1;
 
@@ -1178,47 +1250,54 @@ export function App() {
                 {task.title}
               </p>
               <div className="task-meta">
-                <span
-                  className={`importance-token ${task.importance}`}
-                  aria-label={`${task.importance} importance`}
-                  title={`${task.importance} importance`}
-                >
-                  {getImportanceShortLabel(task.importance)}
-                </span>
-                {urgencyLabel ? (
+                <div className="meta-row meta-priority-row">
                   <span
-                    className={
-                      urgencyLabel === "Overdue"
-                        ? "urgency overdue"
-                        : urgencyLabel === "Due"
-                        ? "urgency due"
-                        : urgencyLabel === "Urgent"
-                        ? "urgency urgent"
-                        : "urgency"
-                    }
+                    className={`importance-token ${task.importance}`}
+                    aria-label={`${task.importance} importance`}
+                    title={`${task.importance} importance`}
                   >
-                    {urgencyLabel === "Overdue" ? (
-                      <span className="overdue-icon" aria-label="Overdue" />
-                    ) : (
-                      urgencyLabel
-                    )}
+                    {getImportanceShortLabel(task.importance)}
                   </span>
-                ) : null}
-                {dueDateParts ? (
-                  <>
+                  {urgencyLabel ? (
+                    <span
+                      className={
+                        urgencyLabel === "Overdue"
+                          ? "urgency overdue"
+                          : urgencyLabel === "Due"
+                          ? "urgency due"
+                          : urgencyLabel === "Urgent"
+                          ? "urgency urgent"
+                          : "urgency"
+                      }
+                    >
+                      {urgencyLabel === "Overdue" ? (
+                        <span className="overdue-icon" aria-label="Overdue" />
+                      ) : (
+                        urgencyLabel
+                      )}
+                    </span>
+                  ) : null}
+                </div>
+                {dueDateParts && dueDaysChip ? (
+                  <div className="meta-row meta-date-row">
+                    <span className={`due-days-chip ${dueDaysChip.tone}`}>
+                      {dueDaysChip.label}
+                    </span>
                     <span className="date-chip">{dueDateParts.month}</span>
                     <span className="date-chip">{dueDateParts.day}</span>
-                  </>
+                  </div>
                 ) : null}
-                {task.estimatedDuration ? (
-                  <span>{task.estimatedDuration}</span>
-                ) : null}
-                {task.repeat !== "none" ? (
-                  <span>{formatRepeat(task.repeat)}</span>
-                ) : null}
-                {task.completedAt ? (
-                  <span>Completed {formatDate(task.completedAt)}</span>
-                ) : null}
+                <div className="meta-row meta-extra-row">
+                  {task.estimatedDuration ? (
+                    <span>{task.estimatedDuration}</span>
+                  ) : null}
+                  {task.repeat !== "none" ? (
+                    <span>{formatRepeat(task.repeat)}</span>
+                  ) : null}
+                  {task.completedAt ? (
+                    <span>Completed {formatDate(task.completedAt)}</span>
+                  ) : null}
+                </div>
               </div>
               {isExpanded ? (
                 <div className="task-details">
@@ -1256,7 +1335,7 @@ export function App() {
                   title="Restore"
                   onClick={() => restoreTask(task.id)}
                 >
-                  ↩
+                  ↩︎
                 </button>
               )}
               <button
