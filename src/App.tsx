@@ -26,7 +26,8 @@ type ColorScheme =
   | "earth"
   | "mustard"
   | "acid"
-  | "tonal";
+  | "tonal"
+  | "grayscale";
 type DropPlacement = {
   taskId: string;
   placement: "before" | "after";
@@ -163,6 +164,7 @@ const colorSchemeOptions: Array<{ value: ColorScheme; label: string }> = [
   { value: "mustard", label: "Mustard Cinema" },
   { value: "acid", label: "Acid Terminal" },
   { value: "tonal", label: "Tonal Contemporary" },
+  { value: "grayscale", label: "Full Greyscale" },
 ];
 
 function createId() {
@@ -214,7 +216,8 @@ function isColorScheme(value: unknown): value is ColorScheme {
     value === "earth" ||
     value === "mustard" ||
     value === "acid" ||
-    value === "tonal"
+    value === "tonal" ||
+    value === "grayscale"
   );
 }
 
@@ -1041,6 +1044,7 @@ export function App() {
   const cloudRefreshTimerRef = useRef<number | null>(null);
   const blockedMoveTimerRef = useRef<number | null>(null);
   const completingTaskIdsRef = useRef<Set<string>>(new Set());
+  const previousViewYRef = useRef<number | null>(null);
   const draftDueDateRef = useRef<HTMLInputElement | null>(null);
   const editingDueDateRef = useRef<HTMLInputElement | null>(null);
 
@@ -1111,12 +1115,30 @@ export function App() {
       ) {
         closeOpenDatePicker();
       }
+
+      if (
+        editingTaskId &&
+        target instanceof Element &&
+        !target.closest(".task-editing") &&
+        !target.closest(".edit-action")
+      ) {
+        cancelEditing();
+      }
+
+      if (
+        expandedTaskIds.size &&
+        target instanceof Element &&
+        !target.closest(".task-info-open") &&
+        !target.closest(".details-action")
+      ) {
+        closeExpandedInfo();
+      }
     };
 
     document.addEventListener("pointerdown", handlePointerDown);
 
     return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, []);
+  }, [editingTaskId, expandedTaskIds]);
 
   useEffect(() => {
     if (!user) {
@@ -1444,7 +1466,34 @@ export function App() {
     setIsAddTaskOpen(false);
   }
 
+  function rememberViewPosition() {
+    previousViewYRef.current = window.scrollY;
+  }
+
+  function restorePreviousView() {
+    const previousViewY = previousViewYRef.current;
+
+    previousViewYRef.current = null;
+
+    if (previousViewY === null) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      window.scrollTo(0, previousViewY);
+    }, 0);
+  }
+
+  function closeExpandedInfo() {
+    setExpandedTaskIds(new Set());
+    restorePreviousView();
+  }
+
   function startEditing(task: Task) {
+    if (!expandedTaskIds.has(task.id)) {
+      rememberViewPosition();
+    }
+
     setEditingTaskId(task.id);
     setEditingDraft({
       title: task.title,
@@ -1466,6 +1515,7 @@ export function App() {
   function cancelEditing() {
     setEditingTaskId(null);
     setEditingDraft(emptyDraft);
+    restorePreviousView();
   }
 
   function saveEdit(taskId: string) {
@@ -1497,7 +1547,9 @@ export function App() {
           : task,
       ),
     );
-    cancelEditing();
+    setEditingTaskId(null);
+    setEditingDraft(emptyDraft);
+    restorePreviousView();
   }
 
   function deleteTask(taskId: string) {
@@ -1756,7 +1808,13 @@ export function App() {
 
   function toggleTaskDetails(taskId: string) {
     setExpandedTaskIds((currentIds) => {
-      return currentIds.has(taskId) ? new Set() : new Set([taskId]);
+      if (currentIds.has(taskId)) {
+        restorePreviousView();
+        return new Set();
+      }
+
+      rememberViewPosition();
+      return new Set([taskId]);
     });
   }
 
@@ -1897,6 +1955,16 @@ export function App() {
     const dueDateParts = getDueDateParts(task.dueDate);
     const dueDaysChip = getDueDaysChip(task);
     const flagTone = getFlagTone(task.flagType);
+    const hasInfoDetails = Boolean(
+      task.details ||
+        task.dueDate ||
+        task.dueTime ||
+        task.estimatedDuration ||
+        task.repeat !== "none" ||
+        task.dueEndTime ||
+        task.durationMinutes ||
+        task.completedAt,
+    );
 
     return (
       <article
@@ -1922,6 +1990,15 @@ export function App() {
             viewTransitionName: `task-${task.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
           } as CSSProperties
         }
+        onClick={(event) => {
+          if (
+            isExpanded &&
+            !isEditing &&
+            !(event.target as Element).closest(".task-info-actions")
+          ) {
+            closeExpandedInfo();
+          }
+        }}
         >
         {blockedMoveTaskId === task.id ? (
           <div className="move-blocked-alert" aria-live="polite">
@@ -1939,7 +2016,13 @@ export function App() {
           type="button"
           aria-label={task.flagged ? "Keep visible is on" : "Keep visible is off"}
           title={task.flagged ? "Keep visible is on" : "Keep visible is off"}
-          onClick={() => toggleTaskFlag(task.id)}
+          onClick={(event) => {
+            event.stopPropagation();
+            toggleTaskFlag(task.id);
+            if (isExpanded) {
+              closeExpandedInfo();
+            }
+          }}
         >
           {getFlagIcon(task.flagType)}
         </button>
@@ -2200,9 +2283,9 @@ export function App() {
                 <div className="task-details">
                   {task.details ? (
                     <p>{task.details}</p>
-                  ) : (
+                  ) : !hasInfoDetails ? (
                     <p className="muted">No extra details yet.</p>
-                  )}
+                  ) : null}
                   {task.dueDate ? (
                     <p className="muted">
                       Becomes urgent {task.urgentBeforeDays} day
@@ -2231,14 +2314,45 @@ export function App() {
               ) : null}
             </div>
 
-            <div className="task-actions">
+            {isExpanded ? (
+              <div className="task-actions task-info-actions">
+                <button
+                  className="task-icon-action edit-action"
+                  type="button"
+                  aria-label="Edit task"
+                  title="Edit"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    startEditing(task);
+                  }}
+                >
+                  ✎
+                </button>
+                <button
+                  className="task-icon-action close-info-action"
+                  type="button"
+                  aria-label="Close details"
+                  title="Close"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    closeExpandedInfo();
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div className="task-actions">
               {!task.completed ? (
                 <button
                   className="task-icon-action complete-action"
                   type="button"
                   aria-label="Complete task"
                   title="Complete"
-                  onClick={() => completeTask(task.id)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    completeTask(task.id);
+                  }}
                 >
                   ✓
                 </button>
@@ -2248,7 +2362,10 @@ export function App() {
                   type="button"
                   aria-label="Restore task"
                   title="Restore"
-                  onClick={() => restoreTask(task.id)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    restoreTask(task.id);
+                  }}
                 >
                   ↩︎
                 </button>
@@ -2258,7 +2375,10 @@ export function App() {
                 type="button"
                 aria-label={isExpanded ? "Hide details" : "Show details"}
                 title={isExpanded ? "Hide details" : "Details"}
-                onClick={() => toggleTaskDetails(task.id)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleTaskDetails(task.id);
+                }}
               >
                 i
               </button>
@@ -2267,7 +2387,10 @@ export function App() {
                 type="button"
                 aria-label="Edit task"
                 title="Edit"
-                onClick={() => startEditing(task)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  startEditing(task);
+                }}
               >
                 ✎
               </button>
@@ -2301,6 +2424,7 @@ export function App() {
                 </button>
               ) : null}
             </div>
+            )}
           </>
         )}
       </article>
@@ -2753,7 +2877,7 @@ export function App() {
                 <p className="field-help">Used when a due date is set.</p>
 
                 <details className="details-entry">
-                  <summary>Notes &amp; details</summary>
+                  <summary>Notes &amp; Details</summary>
                   <label>
                     <span>Notes</span>
                     <textarea

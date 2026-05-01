@@ -720,3 +720,34 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 26 Approval
+
+- CEO requested the overdue exclamation mark be centered.
+- CEO requested complete/check be unavailable while info is open.
+- CEO requested info/edit close return to the previous scroll position.
+- CEO requested `No extra details yet` be hidden when metadata exists.
+- CEO requested info mode show only Edit and Close buttons.
+- CEO requested info close when clicking the panel or outside it.
+- CEO requested edit cancel when clicking outside the edit panel.
+- CEO requested darker info text.
+- CEO requested `Notes & Details` capitalization in Create Task.
+- CEO requested a full greyscale colour theme.
+
+### Sprint 26 Implementation Changes
+
+- Centered the overdue title-pillow icon.
+- Added scroll-position memory/restoration for info and edit panels.
+- Changed info-open action buttons to only Edit and Close.
+- Removed complete/restore from info-open state.
+- Added click-to-close behavior for info panels and outside-info clicks.
+- Added outside-edit click cancel behavior.
+- Suppressed `No extra details yet` whenever due date, time, effort, repeat, duration, or completed metadata exists.
+- Darkened and lightly surfaced expanded info text.
+- Capitalized `Notes & Details`.
+- Added `Full Greyscale` as a selectable colour scheme with light/dark variants.
+
+### Sprint 26 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

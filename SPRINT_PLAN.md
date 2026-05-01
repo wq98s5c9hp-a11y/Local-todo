@@ -409,3 +409,21 @@ Goal: Simplify task creation for first-time users while keeping tile metadata cl
 - Keep Edit Task full-featured.
 - Ensure due time and effort size do not affect sorting.
 - Run a production build.
+
+## Sprint 26: Info Panel Interaction And Greyscale Theme
+
+Goal: Make expanded task info behave like a clean overlay panel and add a full greyscale appearance option.
+
+## Planned Scope
+
+- Center the overdue exclamation mark in its title pill.
+- Hide normal tile action buttons when info is open and show only Edit and Close.
+- Prevent completion from the info-open state.
+- Restore scroll position when info/edit panels close.
+- Close info when clicking the info panel or outside it.
+- Cancel edit when clicking outside the edit panel.
+- Avoid showing `No extra details yet` when time/repeat/other metadata exists.
+- Darken info text for readability.
+- Capitalise `Notes & Details` in Create Task.
+- Add a full greyscale colour scheme.
+- Run a production build.
