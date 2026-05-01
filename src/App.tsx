@@ -12,6 +12,7 @@ import { supabase } from "./supabase";
 
 type TaskImportance = "low" | "medium" | "high";
 type TaskRepeat = "none" | "daily" | "weekly" | "monthly" | "yearly";
+type EstimateUnit = "minutes" | "hours" | "days" | "weeks";
 
 type Task = {
   id: string;
@@ -84,6 +85,8 @@ const importanceWeight: Record<TaskImportance, number> = {
   high: 3,
 };
 
+const estimateUnits: EstimateUnit[] = ["minutes", "hours", "days", "weeks"];
+
 function createId() {
   if ("crypto" in window && "randomUUID" in window.crypto) {
     return window.crypto.randomUUID();
@@ -103,6 +106,15 @@ function isTaskRepeat(value: unknown): value is TaskRepeat {
     value === "weekly" ||
     value === "monthly" ||
     value === "yearly"
+  );
+}
+
+function isEstimateUnit(value: unknown): value is EstimateUnit {
+  return (
+    value === "minutes" ||
+    value === "hours" ||
+    value === "days" ||
+    value === "weeks"
   );
 }
 
@@ -268,6 +280,20 @@ function getManualBias(task: Task) {
   return task.sortOrder ?? 0;
 }
 
+function clampManualBias(value: number) {
+  return Math.max(-MAX_MANUAL_BIAS, Math.min(MAX_MANUAL_BIAS, value));
+}
+
+function getStableTieBreak(task: Task) {
+  let hash = 0;
+
+  for (const character of task.id) {
+    hash = (hash * 31 + character.charCodeAt(0)) % 1000;
+  }
+
+  return hash / 1000000;
+}
+
 function getDueScore(daysUntilDue: number | null) {
   if (daysUntilDue === null) {
     return 0;
@@ -316,7 +342,71 @@ function getTaskBaseScore(task: Task) {
 }
 
 function getTaskScore(task: Task) {
-  return getTaskBaseScore(task) + getManualBias(task);
+  return getTaskBaseScore(task) + getManualBias(task) + getStableTieBreak(task);
+}
+
+function getBiasForDesiredIndex(
+  movedTask: Task,
+  orderedTasksWithoutMovedTask: Task[],
+  desiredIndex: number,
+) {
+  const taskBefore = orderedTasksWithoutMovedTask[desiredIndex - 1];
+  const taskAfter = orderedTasksWithoutMovedTask[desiredIndex];
+  const movedBaseScore = getTaskBaseScore(movedTask);
+  let desiredScore = movedBaseScore;
+
+  if (taskBefore && taskAfter) {
+    desiredScore = (getTaskScore(taskBefore) + getTaskScore(taskAfter)) / 2;
+  } else if (taskAfter) {
+    desiredScore = getTaskScore(taskAfter) + 2;
+  } else if (taskBefore) {
+    desiredScore = getTaskScore(taskBefore) - 2;
+  }
+
+  return clampManualBias(desiredScore - movedBaseScore);
+}
+
+function parseEstimate(value: string) {
+  const trimmedValue = value.trim();
+  const match = trimmedValue.match(/^(\d+(?:\.\d+)?)\s*([a-zA-Z]*)/);
+
+  if (!match) {
+    return {
+      amount: "",
+      unit: "minutes" as EstimateUnit,
+    };
+  }
+
+  const rawUnit = match[2].toLowerCase();
+  const unit =
+    rawUnit.startsWith("week")
+      ? "weeks"
+      : rawUnit.startsWith("day")
+        ? "days"
+        : rawUnit.startsWith("hour") || rawUnit === "hr" || rawUnit === "hrs"
+          ? "hours"
+          : rawUnit.startsWith("min")
+            ? "minutes"
+            : "minutes";
+
+  return {
+    amount: match[1],
+    unit: unit as EstimateUnit,
+  };
+}
+
+function formatEstimate(amount: string, unit: EstimateUnit) {
+  const trimmedAmount = amount.trim();
+
+  if (!trimmedAmount) {
+    return "";
+  }
+
+  const numericAmount = Number(trimmedAmount);
+  const unitLabel =
+    numericAmount === 1 ? unit.replace(/s$/, "") : unit;
+
+  return `${trimmedAmount} ${unitLabel}`;
 }
 
 function getUrgencyLabel(task: Task) {
@@ -564,6 +654,8 @@ export function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => loadDarkMode());
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [dropTargetTaskId, setDropTargetTaskId] = useState<string | null>(null);
   const loadingCloudRef = useRef(false);
   const completingTaskIdsRef = useRef<Set<string>>(new Set());
   const draftDueDateRef = useRef<HTMLInputElement | null>(null);
@@ -958,28 +1050,23 @@ export function App() {
     }
 
     const movedTask = activeTasks[currentIndex];
-    const targetTask = activeTasks[nextIndex];
-    const movedBaseScore = getTaskBaseScore(movedTask);
-    const targetScore = getTaskScore(targetTask);
-    const nextBias =
-      direction === "up"
-        ? targetScore - movedBaseScore + 1
-        : targetScore - movedBaseScore - 1;
-    const boundedBias = Math.max(
-      -MAX_MANUAL_BIAS,
-      Math.min(MAX_MANUAL_BIAS, nextBias),
+    const orderedTasksWithoutMovedTask = activeTasks.filter(
+      (task) => task.id !== taskId,
+    );
+    const desiredIndex =
+      direction === "up" ? Math.max(0, currentIndex - 1) : currentIndex + 1;
+    const nextBias = getBiasForDesiredIndex(
+      movedTask,
+      orderedTasksWithoutMovedTask,
+      desiredIndex,
     );
     const adjustedBias =
-      boundedBias === getManualBias(movedTask)
-        ? Math.max(
-            -MAX_MANUAL_BIAS,
-            Math.min(
-              MAX_MANUAL_BIAS,
-              getManualBias(movedTask) +
-                (direction === "up" ? MANUAL_BIAS_STEP : -MANUAL_BIAS_STEP),
-            ),
+      nextBias === getManualBias(movedTask)
+        ? clampManualBias(
+            getManualBias(movedTask) +
+              (direction === "up" ? MANUAL_BIAS_STEP : -MANUAL_BIAS_STEP),
           )
-        : boundedBias;
+        : nextBias;
 
     persistTasksWithTransition(
       tasks.map((task) =>
@@ -987,6 +1074,42 @@ export function App() {
           ? {
               ...task,
               sortOrder: adjustedBias,
+              updatedAt: new Date().toISOString(),
+            }
+          : task,
+      ),
+    );
+  }
+
+  function moveTaskToPosition(taskId: string, targetTaskId: string) {
+    if (taskId === targetTaskId) {
+      return;
+    }
+
+    const movedTask = activeTasks.find((task) => task.id === taskId);
+    const orderedTasksWithoutMovedTask = activeTasks.filter(
+      (task) => task.id !== taskId,
+    );
+    const desiredIndex = orderedTasksWithoutMovedTask.findIndex(
+      (task) => task.id === targetTaskId,
+    );
+
+    if (!movedTask || desiredIndex < 0) {
+      return;
+    }
+
+    const nextBias = getBiasForDesiredIndex(
+      movedTask,
+      orderedTasksWithoutMovedTask,
+      desiredIndex,
+    );
+
+    persistTasksWithTransition(
+      tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              sortOrder: nextBias,
               updatedAt: new Date().toISOString(),
             }
           : task,
@@ -1059,6 +1182,45 @@ export function App() {
     reader.readAsText(file);
   }
 
+  function renderEstimateControl(
+    value: string,
+    onChange: (nextValue: string) => void,
+  ) {
+    const estimate = parseEstimate(value);
+
+    return (
+      <div className="estimate-control">
+        <input
+          type="number"
+          min="0"
+          step="1"
+          inputMode="decimal"
+          value={estimate.amount}
+          onChange={(event) =>
+            onChange(formatEstimate(event.target.value, estimate.unit))
+          }
+          placeholder="30"
+        />
+        <select
+          value={estimate.unit}
+          onChange={(event) => {
+            const unit = isEstimateUnit(event.target.value)
+              ? event.target.value
+              : "minutes";
+
+            onChange(formatEstimate(estimate.amount, unit));
+          }}
+        >
+          {estimateUnits.map((unit) => (
+            <option key={unit} value={unit}>
+              {unit[0].toUpperCase() + unit.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
   function renderTask(task: Task, isFeatured = false, activeIndex: number | null = null) {
     const isEditing = editingTaskId === task.id;
     const isExpanded = expandedTaskIds.has(task.id);
@@ -1075,10 +1237,56 @@ export function App() {
           isFeatured ? "task-featured" : "",
           isEditing ? "task-editing" : "",
           task.completed ? "task-completed" : "",
+          draggingTaskId === task.id ? "task-dragging" : "",
+          dropTargetTaskId === task.id ? "task-drop-target" : "",
         ]
           .filter(Boolean)
           .join(" ")}
         key={task.id}
+        draggable={activeIndex !== null && !isEditing}
+        onDragStart={(event) => {
+          if (activeIndex === null || isEditing) {
+            return;
+          }
+
+          setDraggingTaskId(task.id);
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", task.id);
+        }}
+        onDragOver={(event) => {
+          if (activeIndex === null || !draggingTaskId || draggingTaskId === task.id) {
+            return;
+          }
+
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+          setDropTargetTaskId(task.id);
+        }}
+        onDragLeave={() => {
+          if (dropTargetTaskId === task.id) {
+            setDropTargetTaskId(null);
+          }
+        }}
+        onDrop={(event) => {
+          if (activeIndex === null) {
+            return;
+          }
+
+          event.preventDefault();
+          const movedTaskId =
+            event.dataTransfer.getData("text/plain") || draggingTaskId;
+
+          if (movedTaskId) {
+            moveTaskToPosition(movedTaskId, task.id);
+          }
+
+          setDraggingTaskId(null);
+          setDropTargetTaskId(null);
+        }}
+        onDragEnd={() => {
+          setDraggingTaskId(null);
+          setDropTargetTaskId(null);
+        }}
         style={
           {
             viewTransitionName: `task-${task.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`,
@@ -1145,17 +1353,13 @@ export function App() {
             </label>
 
             <label>
-              <span>Estimate</span>
-              <input
-                value={editingDraft.estimatedDuration}
-                onChange={(event) =>
-                  setEditingDraft({
-                    ...editingDraft,
-                    estimatedDuration: event.target.value,
-                  })
-                }
-                placeholder="30 min"
-              />
+              <span>Time estimate</span>
+              {renderEstimateControl(editingDraft.estimatedDuration, (nextValue) =>
+                setEditingDraft({
+                  ...editingDraft,
+                  estimatedDuration: nextValue,
+                }),
+              )}
             </label>
 
             <label>
@@ -1550,14 +1754,10 @@ export function App() {
                 </label>
 
                 <label>
-                  <span>Estimate</span>
-                  <input
-                    value={draft.estimatedDuration}
-                    onChange={(event) =>
-                      setDraft({ ...draft, estimatedDuration: event.target.value })
-                    }
-                    placeholder="30 min"
-                  />
+                  <span>Time estimate</span>
+                  {renderEstimateControl(draft.estimatedDuration, (nextValue) =>
+                    setDraft({ ...draft, estimatedDuration: nextValue }),
+                  )}
                 </label>
 
                 <label>

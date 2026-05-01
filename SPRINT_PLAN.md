@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 14 executed
+Status: Sprint 15 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -235,3 +235,16 @@ Goal: Make tiles easier to scan and make sorting behave according to urgency and
 - Kept completed restore as a plain return arrow.
 - Reworked sorting around due score, urgency threshold, importance, and bounded manual bias.
 - Added requested category/calendar/sharing ideas to the roadmap without implementing them.
+
+## Sprint 15: Estimate Controls And Manual Drag Sorting
+
+Goal: Make time estimates clearer and make task ordering easier to control without breaking due-date urgency.
+
+## Completed Scope
+
+- Replace the plain estimate entry with amount plus minutes/hours/days/weeks options.
+- Tune the sorting score so nearer due dates strongly outweigh far-future priority.
+- Keep up/down controls but make them adjust a bounded manual bias instead of absolute position.
+- Add drag-style manual reordering for active tiles.
+- Prevent exact score ties with a tiny stable tie-breaker.
+- Add daily to-dos, push notifications, and desktop display to the roadmap only.

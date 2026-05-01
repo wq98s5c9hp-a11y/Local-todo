@@ -437,3 +437,25 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 15 Approval
+
+- CEO requested time estimates use an amount plus minutes/hours/days/weeks options.
+- CEO requested the sorting algorithm be written out for review.
+- CEO requested due-soon low-priority tasks outrank far-future medium/high-priority tasks.
+- CEO reported up/down movement sometimes jumps two tiles and asked for less tie-prone ordering.
+- CEO requested drag-style manual movement while keeping up/down buttons.
+- CEO requested daily to-dos, push notifications, and desktop display be added to the roadmap only.
+
+### Sprint 15 Implementation Changes
+
+- Replaced plain estimate text boxes with amount/unit controls while keeping the same stored estimate text format.
+- Reworked task scores around due-date urgency, importance, urgency threshold, bounded manual bias, and a tiny stable tie-breaker.
+- Changed up/down controls to calculate a new manual bias relative to neighboring task scores.
+- Added drag-and-drop movement for active task tiles with a visible drop target.
+- Added future roadmap items for daily to-dos, push notifications, and desktop display mode.
+
+### Sprint 15 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

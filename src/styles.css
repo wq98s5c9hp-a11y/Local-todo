@@ -350,6 +350,12 @@ h3 {
   gap: 0.4rem;
 }
 
+.estimate-control {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.2fr);
+  gap: 0.4rem;
+}
+
 .date-control button {
   min-height: 40px;
   padding-inline: 0.65rem;
@@ -460,6 +466,22 @@ h3 {
 .task-completed.task-editing {
   background: var(--archive-tile);
   color: var(--archive-text);
+}
+
+.task[draggable="true"] {
+  cursor: grab;
+}
+
+.task-dragging {
+  cursor: grabbing;
+  opacity: 0.52;
+  transform: scale(0.96);
+}
+
+.task-drop-target {
+  outline: 3px dashed #171712;
+  outline-offset: -8px;
+  transform: translateY(4px) scale(0.97);
 }
 
 .task-featured .task-title {

@@ -317,6 +317,9 @@ Completed features:
 - Per-category task field toggles, such as hiding due date for a category.
 - Calendar sync.
 - Shared categories with other accounts for shared to-do lists.
+- Daily to-dos that can be checked off every day without living in the main task tile list.
+- Push notifications.
+- Desktop display mode for an always-visible view.
 
 ## Later Ideas
 
@@ -338,6 +341,9 @@ These are intentionally outside version 1:
 - Category field toggles
 - Calendar sync
 - Shared categories / shared to-do lists
+- Daily to-dos outside the main tile list
+- Push notifications
+- Desktop display mode
 
 Any later idea should be discussed before implementation.
 
