@@ -290,14 +290,31 @@ function getUrgencyLabel(task: Task) {
   }
 
   if (daysUntilDue === 0) {
-    return "Due today";
+    return "Due";
   }
 
   if (daysUntilDue <= task.urgentBeforeDays) {
     return "Urgent";
   }
 
-  return `Due in ${daysUntilDue} day${daysUntilDue === 1 ? "" : "s"}`;
+  return `${daysUntilDue}d`;
+}
+
+function getImportanceShortLabel(importance: TaskImportance) {
+  return importance[0].toUpperCase();
+}
+
+function getDueDateParts(value: string) {
+  const date = parseLocalDate(value);
+
+  if (!date) {
+    return null;
+  }
+
+  return {
+    month: new Intl.DateTimeFormat(undefined, { month: "short" }).format(date),
+    day: String(date.getDate()),
+  };
 }
 
 function formatDate(value?: string) {
@@ -975,6 +992,7 @@ export function App() {
     const isEditing = editingTaskId === task.id;
     const isExpanded = expandedTaskIds.has(task.id);
     const urgencyLabel = getUrgencyLabel(task);
+    const dueDateParts = getDueDateParts(task.dueDate);
     const canMoveUp = activeIndex !== null && activeIndex > 0;
     const canMoveDown = activeIndex !== null && activeIndex < activeTasks.length - 1;
 
@@ -984,6 +1002,7 @@ export function App() {
           "task",
           isFeatured ? "task-featured" : "",
           isEditing ? "task-editing" : "",
+          task.completed ? "task-completed" : "",
         ]
           .filter(Boolean)
           .join(" ")}
@@ -1159,21 +1178,36 @@ export function App() {
                 {task.title}
               </p>
               <div className="task-meta">
-                <span className={`importance ${task.importance}`}>
-                  {task.importance}
+                <span
+                  className={`importance-token ${task.importance}`}
+                  aria-label={`${task.importance} importance`}
+                  title={`${task.importance} importance`}
+                >
+                  {getImportanceShortLabel(task.importance)}
                 </span>
                 {urgencyLabel ? (
                   <span
                     className={
-                      urgencyLabel === "Overdue" || urgencyLabel === "Urgent"
+                      urgencyLabel === "Overdue"
+                        ? "urgency overdue"
+                        : urgencyLabel === "Urgent"
                         ? "urgency urgent"
                         : "urgency"
                     }
                   >
-                    {urgencyLabel}
+                    {urgencyLabel === "Overdue" ? (
+                      <span className="overdue-icon" aria-label="Overdue" />
+                    ) : (
+                      urgencyLabel
+                    )}
                   </span>
                 ) : null}
-                {task.dueDate ? <span>Due {formatDate(task.dueDate)}</span> : null}
+                {dueDateParts ? (
+                  <>
+                    <span className="date-chip">{dueDateParts.month}</span>
+                    <span className="date-chip">{dueDateParts.day}</span>
+                  </>
+                ) : null}
                 {task.estimatedDuration ? (
                   <span>{task.estimatedDuration}</span>
                 ) : null}

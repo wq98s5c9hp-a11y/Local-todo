@@ -273,6 +273,28 @@ Completed features:
 - Closing or creating a task transitions back into the grid flow.
 - Edit pencil button turns cyan on magenta highlighted tiles.
 
+## Stage 19: Tile Information Compression
+
+Status: Complete
+
+Improve fixed tile readability, especially on mobile.
+
+Completed features:
+
+- Desktop tile grid uses fixed-size columns across the available screen.
+- Tile metadata is compressed into short chips.
+- Importance displays as H/M/L in a black circle.
+- Due dates display as month and day chips without the year.
+- `Due today` is shortened to `Due`.
+- Overdue state uses a compact warning icon.
+- Add and edit expanded panels keep the same color family as their originating tile.
+- Archive tiles use light grey with darker crossed-out text.
+
+## Planned Later Improvements
+
+- Spellcheck for task entry and notes.
+- Better expanded more-info display for dense task details.
+
 ## Later Ideas
 
 These are intentionally outside version 1:
@@ -286,6 +308,8 @@ These are intentionally outside version 1:
 - Reminders
 - TV-specific display mode
 - Desktop always-on packaging
+- Spellcheck
+- Better more-info display
 
 Any later idea should be discussed before implementation.
 

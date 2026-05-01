@@ -354,3 +354,33 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 12 Approval
+
+- CEO requested desktop tiles stay constant size with empty space until another column fits.
+- CEO requested simpler tile info to avoid mobile clipping.
+- CEO requested H/M/L importance letters in colored text inside a black circle.
+- CEO requested shorter due date display without year, with month and day in capsules.
+- CEO requested `Due today` become `Due`.
+- CEO requested overdue display become a compact red triangle warning inside the black capsule.
+- CEO requested add and edit expanded panels keep the same tile-color feel.
+- CEO requested archive tiles become light grey with darker crossed-out task names.
+- CEO requested spellcheck and better more-info display be added to the roadmap, but not implemented yet.
+
+### Sprint 12 Implementation Changes
+
+- Changed desktop app width/grid behavior so fixed-size tile columns use the available screen and leave side space until another column fits.
+- Replaced full importance words with H/M/L tokens.
+- Replaced full due dates with month/day chips.
+- Shortened future due status to compact day counts.
+- Shortened due-today label to `Due`.
+- Added compact overdue warning icon styling.
+- Made add form background cyan.
+- Made edit form background match the tile being edited.
+- Styled archive tiles as grey with darker crossed-out text.
+- Added spellcheck and better more-info display to the roadmap.
+
+### Sprint 12 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

@@ -2,7 +2,7 @@
 
 ## Current Sprint Status
 
-Status: Sprint 11 executed
+Status: Sprint 12 executed
 
 ## Sprint 2: Full Local Task Power-Up
 
@@ -187,3 +187,22 @@ Goal: Make task creation feel like the add tile expands into a full form and the
 - Let the add form grow vertically to fit all inputs and controls.
 - Animated closing and create-task transitions where supported.
 - Made the edit pencil cyan on magenta highlighted tiles.
+
+## Sprint 12: Tile Information Compression
+
+Goal: Keep fixed tiles readable on desktop and mobile while preserving the square grid interaction.
+
+## Completed Scope
+
+- Locked the desktop grid to fixed-size columns across available width.
+- Simplified importance to H/M/L chips.
+- Shortened due-date display to month and day chips.
+- Shortened `Due today` to `Due`.
+- Changed overdue display to a compact warning icon.
+- Made add and edit expanded panels keep tile-colored backgrounds.
+- Styled archive tiles as grey with darker crossed-out titles.
+
+## Added To Roadmap
+
+- Spellcheck.
+- Better more-info display.

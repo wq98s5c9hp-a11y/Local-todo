@@ -5,6 +5,8 @@
   --surface-top: #d1008f;
   --task-normal: #00a7c8;
   --task-text: #ffffff;
+  --archive-tile: #e2e4df;
+  --archive-text: #535850;
   --text: #171712;
   --muted: #64675f;
   --label: #3f443d;
@@ -42,6 +44,8 @@ html[data-theme="dark"] {
   --surface-top: #ff4fc3;
   --task-normal: #00bcd4;
   --task-text: #071315;
+  --archive-tile: #30342f;
+  --archive-text: #aeb8a8;
   --text: #f2f5ea;
   --muted: #aeb8a8;
   --label: #d3dbc9;
@@ -131,7 +135,7 @@ label {
 }
 
 .app-shell {
-  width: min(920px, calc(100% - 2rem));
+  width: calc(100% - 2rem);
   margin: 0 auto;
   padding: 1rem 0 3rem;
 }
@@ -395,8 +399,8 @@ h3 {
   padding: 1rem;
   border-color: var(--magenta);
   border-radius: 18px;
-  background: var(--surface-strong);
-  color: var(--text);
+  background: var(--task-normal);
+  color: var(--task-text);
   box-shadow: 0 18px 42px color-mix(in srgb, var(--magenta) 22%, transparent);
   overflow: visible;
   z-index: 2;
@@ -404,6 +408,11 @@ h3 {
 
 .add-panel .task-form {
   grid-template-columns: 1fr;
+}
+
+.add-panel label,
+.add-panel .details-entry summary {
+  color: inherit;
 }
 
 .add-panel .panel-header {
@@ -422,6 +431,18 @@ h3 {
   background: var(--surface-top);
   color: var(--magenta-text);
   box-shadow: 0 10px 24px color-mix(in srgb, var(--magenta) 28%, transparent);
+}
+
+.task-completed {
+  background: var(--archive-tile);
+  border-color: color-mix(in srgb, var(--archive-text) 28%, transparent);
+  color: var(--archive-text);
+  box-shadow: none;
+}
+
+.task-completed.task-editing {
+  background: var(--archive-tile);
+  color: var(--archive-text);
 }
 
 .task-featured .task-title {
@@ -443,7 +464,7 @@ h3 {
 }
 
 .task-title.completed {
-  color: var(--muted);
+  color: var(--archive-text);
   text-decoration: line-through;
 }
 
@@ -456,41 +477,74 @@ h3 {
   font-size: 0.8rem;
 }
 
-.importance,
-.urgency {
+.importance-token,
+.urgency,
+.date-chip {
+  display: inline-flex;
+  min-height: 1.45rem;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
-  padding: 0.1rem 0.5rem;
+  padding: 0.12rem 0.48rem;
+  background: #171712;
+  color: #ffffff;
+  font-weight: 800;
+  line-height: 1;
   text-transform: capitalize;
 }
 
-.importance.low {
-  background: var(--good-bg);
+.importance-token {
+  width: 1.45rem;
+  padding-inline: 0;
+}
+
+.importance-token.low {
   color: var(--good);
 }
 
-.importance.medium {
-  background: var(--warn-bg);
-  color: #6f5600;
+.importance-token.medium {
+  color: var(--warn);
 }
 
-.importance.high {
-  background: var(--bad-bg);
+.importance-token.high {
   color: var(--bad);
 }
 
 .urgency {
-  background: var(--info-bg);
-  color: var(--info);
+  background: #171712;
+  color: var(--task-normal);
 }
 
 .urgency.urgent {
-  background: var(--bad-bg);
-  color: var(--bad);
-  font-weight: 700;
+  color: var(--warn);
 }
 
-html[data-theme="dark"] .importance.medium {
-  color: var(--warn);
+.urgency.overdue {
+  min-width: 2.1rem;
+  padding-inline: 0.35rem;
+}
+
+.date-chip {
+  color: #ffffff;
+}
+
+.overdue-icon {
+  position: relative;
+  width: 1.05rem;
+  height: 0.95rem;
+  background: var(--bad);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.overdue-icon::after {
+  position: absolute;
+  inset: 0.16rem 0 0;
+  color: #171712;
+  content: "!";
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
 }
 
 .task-details {
@@ -583,11 +637,31 @@ html[data-theme="dark"] .importance.medium {
 }
 
 .task-editing {
-  grid-column: 1 / -1;
-  width: 100%;
+  grid-column: span 2;
+  width: min(
+    calc((var(--task-tile-size) * 2) + 0.75rem),
+    calc(100vw - 1rem)
+  );
   height: auto;
-  background: var(--surface-strong);
-  color: var(--text);
+  min-height: min(72vh, 680px);
+  background: var(--task-normal);
+  color: var(--task-text);
+  overflow: visible;
+  z-index: 2;
+}
+
+.task-featured.task-editing {
+  background: var(--surface-top);
+  color: var(--magenta-text);
+}
+
+.task-editing label,
+.task-editing .details-entry summary {
+  color: inherit;
+}
+
+.task-editing .task-edit-form {
+  grid-template-columns: 1fr;
 }
 
 .wide-field {
@@ -654,6 +728,14 @@ html[data-theme="dark"] .importance.medium {
   }
 
   .task.add-panel {
+    width: min(
+      calc((var(--task-tile-size) * 2) + 0.55rem),
+      calc(100vw - 1rem)
+    );
+    min-height: 72vh;
+  }
+
+  .task-editing {
     width: min(
       calc((var(--task-tile-size) * 2) + 0.55rem),
       calc(100vw - 1rem)
