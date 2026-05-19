@@ -101,7 +101,7 @@ type TaskRow = {
 };
 
 const STORAGE_KEY = "local-first-todo.tasks";
-const APP_VERSION = "2.2";
+const APP_VERSION = "2.3";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
 const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
 const SATURATION_STORAGE_KEY = "local-first-todo.saturation";
@@ -180,6 +180,10 @@ const sortModeOptions: Array<{ value: SortMode; label: string }> = [
   { value: "importance", label: "Importance" },
   { value: "effort", label: "Effort size" },
   { value: "created", label: "Created" },
+];
+const sortDirectionOptions: Array<{ value: SortDirection; label: string }> = [
+  { value: "desc", label: "↓ Descending" },
+  { value: "asc", label: "↑ Ascending" },
 ];
 
 function createId() {
@@ -2807,15 +2811,13 @@ export function App() {
           />
           <div>
             <h1>Tile Todo</h1>
-            <p className="save-status">
-              {user ? "Synced account" : "Local mode"}
-            </p>
           </div>
         </div>
         <div className="header-actions">
           <label className="sort-pill">
-            <span>Sort</span>
+            <span className="visually-hidden">Sort</span>
             <select
+              aria-label="Sort tasks"
               value={sortMode}
               onChange={(event) =>
                 setSortMode(
@@ -2831,8 +2833,9 @@ export function App() {
             </select>
           </label>
           <label className="sort-pill sort-direction-pill">
-            <span>Order</span>
+            <span className="visually-hidden">Sort order</span>
             <select
+              aria-label="Sort order"
               value={sortDirection}
               onChange={(event) =>
                 setSortDirection(
@@ -2840,8 +2843,11 @@ export function App() {
                 )
               }
             >
-              <option value="desc">Desc</option>
-              <option value="asc">Asc</option>
+              {sortDirectionOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <button
@@ -2867,6 +2873,7 @@ export function App() {
               <div>
                 <h2>Menu</h2>
                 <p className="version-label">Version {APP_VERSION}</p>
+                <p className="muted">{user ? "Synced account" : "Local mode"}</p>
                 <p className="muted">{syncMessage}</p>
                 <p className="muted">
                   {lastSavedAt ? `Saved ${formatDate(lastSavedAt)}` : "Ready"}

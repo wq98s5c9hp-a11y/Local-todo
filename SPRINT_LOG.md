@@ -830,3 +830,25 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 30 Approval
+
+- CEO requested the mobile two-column layout become the primary visual focus.
+- CEO said the `Synced account` tag takes too much home-screen space.
+- CEO requested account status move under the version line in the menu.
+- CEO requested ascending/descending be shortened to arrow-based controls.
+- CEO requested sort pills become less visually prominent on the home screen.
+
+### Sprint 30 Implementation Changes
+
+- Removed the synced/local account status line from the main header.
+- Added synced/local account status under `Version 2.3` in the menu.
+- Reduced sort/order pill visual weight with smaller transparent pills.
+- Changed order options to `↓ Descending` and `↑ Ascending`, with compact arrow-led display.
+- Tightened mobile header sizing, logo size, button spacing, and sort widths.
+- Bumped visible app version to `2.3` and package version to `2.3.0`.
+
+### Sprint 30 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

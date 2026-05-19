@@ -473,3 +473,17 @@ Goal: Add quick alternate sorting views and keep older completed tasks out of th
 - Slightly reduce vertical space between the header and Active Tasks.
 - Bump visible version to `2.2`.
 - Run a production build.
+
+## Sprint 30: Mobile Header Polish
+
+Goal: Make the two-column mobile home screen feel cleaner and less crowded.
+
+## Planned Scope
+
+- Remove the synced/local account status from the main header.
+- Move synced/local account status under the version line in the menu.
+- Make sort/order controls less visually dominant on the home screen.
+- Replace order labels with arrow-led ascending/descending options.
+- Keep the full ascending/descending language visible in the dropdown choices.
+- Bump visible version to `2.3`.
+- Run a production build.
