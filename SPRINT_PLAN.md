@@ -427,3 +427,14 @@ Goal: Make expanded task info behave like a clean overlay panel and add a full g
 - Capitalise `Notes & Details` in Create Task.
 - Add a full greyscale colour scheme.
 - Run a production build.
+
+## Sprint 27: ChatGPT Clipboard Export
+
+Goal: Make it easier to paste the current Tile Todo list into ChatGPT without downloading and uploading a JSON file.
+
+## Planned Scope
+
+- Add a `Copy data to clipboard` option in the menu Backup section.
+- Copy a readable task summary plus full structured task data.
+- Keep the existing JSON export/import backup features.
+- Run a production build.

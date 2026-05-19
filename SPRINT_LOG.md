@@ -751,3 +751,20 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 27 Approval
+
+- CEO requested a menu option to copy current Tile Todo data directly to the clipboard for pasting into ChatGPT.
+- CEO wanted this instead of exporting a JSON file and uploading it manually.
+
+### Sprint 27 Implementation Changes
+
+- Added `Copy data to clipboard` in the Backup section of Settings.
+- Clipboard text now includes a readable active-task summary for quick scheduling help.
+- Clipboard text also includes full structured JSON with active tasks, completed tasks, and raw task data.
+- Kept the existing Export and Import buttons unchanged.
+
+### Sprint 27 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

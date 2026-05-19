@@ -1836,6 +1836,102 @@ export function App() {
     URL.revokeObjectURL(url);
   }
 
+  function buildClipboardSnapshot() {
+    const exportedAt = new Date().toISOString();
+    const taskForClipboard = (task: Task, index: number) => ({
+      listPosition: index + 1,
+      id: task.id,
+      title: task.title,
+      completed: task.completed,
+      importance: task.importance,
+      urgencyLabel: getUrgencyLabel(task) || null,
+      daysUntilDue: getDaysUntilDue(task.dueDate),
+      dueDate: task.dueDate || null,
+      dueTime: task.dueTime || null,
+      dueEndTime: task.dueEndTime || null,
+      urgentBeforeDays: task.urgentBeforeDays,
+      effortSize: task.estimatedDuration || null,
+      actualDurationMinutes: task.durationMinutes,
+      repeat: task.repeat,
+      keepVisible: task.flagged,
+      markerStyle: task.flagType,
+      manualSortBias: task.sortOrder,
+      details: task.details || null,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+      completedAt: task.completedAt || null,
+      rawTask: task,
+    });
+    const activeTasksForClipboard = activeTasks.map(taskForClipboard);
+    const completedTasksForClipboard = completedTasks.map(taskForClipboard);
+    const payload = {
+      app: "Tile Todo",
+      exportedAt,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      summary: {
+        activeTaskCount: activeTasks.length,
+        completedTaskCount: completedTasks.length,
+        totalTaskCount: tasks.length,
+      },
+      activeTasks: activeTasksForClipboard,
+      completedTasks: completedTasksForClipboard,
+      allRawTasks: tasks,
+    };
+
+    const activeLines = activeTasksForClipboard.length
+      ? activeTasksForClipboard
+          .map((task) => {
+            const due = task.dueDate ? ` due ${task.dueDate}` : "";
+            const urgency = task.urgencyLabel ? ` ${task.urgencyLabel}` : "";
+            const effort = task.effortSize ? ` effort ${task.effortSize}` : "";
+
+            return `${task.listPosition}. ${task.title} [${task.importance}${urgency}${due}${effort}]`;
+          })
+          .join("\n")
+      : "No active tasks.";
+
+    return [
+      "# Tile Todo Data Export",
+      "",
+      `Exported: ${exportedAt}`,
+      `Active tasks: ${activeTasks.length}`,
+      `Completed tasks: ${completedTasks.length}`,
+      "",
+      "## Active Task Summary",
+      activeLines,
+      "",
+      "## Full Structured Data",
+      "```json",
+      JSON.stringify(payload, null, 2),
+      "```",
+    ].join("\n");
+  }
+
+  async function copyDataToClipboard() {
+    const snapshot = buildClipboardSnapshot();
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(snapshot);
+      } else {
+        const textArea = document.createElement("textarea");
+
+        textArea.value = snapshot;
+        textArea.setAttribute("readonly", "true");
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.append(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        textArea.remove();
+      }
+
+      setImportMessage("Copied full Tile Todo data for ChatGPT.");
+    } catch {
+      setImportMessage("Could not copy data. Try Export instead.");
+    }
+  }
+
   function importBackup(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
@@ -2628,6 +2724,9 @@ export function App() {
                 <section className="menu-section">
                   <h3>Backup</h3>
                   <div className="backup-actions">
+                    <button type="button" onClick={copyDataToClipboard}>
+                      Copy data to clipboard
+                    </button>
                     <button type="button" onClick={exportBackup}>
                       Export
                     </button>
