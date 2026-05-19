@@ -768,3 +768,32 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 28 Approval
+
+- CEO requested a visible version number in the menu, starting with version `2.1`.
+- CEO requested each future update advance the visible version by `.1`.
+- CEO reported some low-priority tasks drift back after manual movement.
+- CEO requested a colon after `Effort size` in expanded info.
+- CEO requested slightly larger task titles.
+- CEO requested the overdue exclamation mark be lowered/centered.
+- CEO requested better red/yellow contrast inside greyscale theme pills.
+- CEO requested custom repeat days, such as every 28 days.
+- CEO requested importance language change from `Normal` to `Medium`.
+
+### Sprint 28 Implementation Changes
+
+- Added `Version 2.1` to the menu header.
+- Bumped the package version to `2.1.0`.
+- Increased the manual movement bias so dragged tasks hold their position better, while due/urgent tasks can still outrank them.
+- Added the missing `Effort size:` colon in expanded info.
+- Increased tile title size slightly.
+- Lowered the overdue exclamation mark for better visual centering.
+- Improved greyscale theme pill contrast for high/due/urgent text.
+- Added custom repeat-day support using the existing repeat field, such as `custom:28`, so no database change is needed.
+- Changed importance display and form option language from `Normal` to `Medium`.
+
+### Sprint 28 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

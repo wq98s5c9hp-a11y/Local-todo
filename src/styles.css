@@ -304,6 +304,19 @@ html[data-theme="light"][data-scheme="grayscale"] {
   --chip-bg: #111411;
 }
 
+html[data-theme="light"][data-scheme="grayscale"] .importance-token.high,
+html[data-theme="light"][data-scheme="grayscale"] .urgency.due,
+html[data-theme="light"][data-scheme="grayscale"] .due-days-chip.red,
+html[data-theme="light"][data-scheme="grayscale"] .title-status-due {
+  color: #f2f4ee;
+}
+
+html[data-theme="light"][data-scheme="grayscale"] .importance-token.medium,
+html[data-theme="light"][data-scheme="grayscale"] .urgency.urgent,
+html[data-theme="light"][data-scheme="grayscale"] .due-days-chip.yellow {
+  color: #d7dbd2;
+}
+
 html[data-theme="dark"][data-scheme="grayscale"] {
   --bg: #0f100f;
   --surface: #1b1d1b;
@@ -530,6 +543,15 @@ h3 {
 
 .menu-header h2 {
   margin-top: 0;
+}
+
+.version-label {
+  margin: 0.15rem 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .menu-tabs {
@@ -954,7 +976,7 @@ h3 {
 
 .task-title {
   color: inherit;
-  font-size: 0.98rem;
+  font-size: 1.08rem;
   font-weight: 650;
   overflow-wrap: anywhere;
 }
@@ -994,6 +1016,7 @@ h3 {
   font-size: 0.68rem;
   font-weight: 900;
   line-height: 1;
+  transform: translateY(0.05rem);
   text-align: center;
 }
 
@@ -1103,7 +1126,7 @@ h3 {
 
 .overdue-icon::after {
   position: absolute;
-  inset: 0.16rem 0 0;
+  inset: 0.2rem 0 0;
   color: var(--chip-bg);
   content: "!";
   font-size: 0.68rem;

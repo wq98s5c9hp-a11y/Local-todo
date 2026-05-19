@@ -11,7 +11,8 @@ import { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 
 type TaskImportance = "low" | "medium" | "high";
-type TaskRepeat = "none" | "daily" | "weekly" | "monthly" | "yearly";
+type StandardTaskRepeat = "none" | "daily" | "weekly" | "monthly" | "yearly";
+type TaskRepeat = StandardTaskRepeat | `custom:${number}`;
 type EstimateUnit = "minutes" | "hours" | "days" | "weeks";
 type TaskFlagType =
   | "red_flag"
@@ -98,6 +99,7 @@ type TaskRow = {
 };
 
 const STORAGE_KEY = "local-first-todo.tasks";
+const APP_VERSION = "2.1";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
 const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
 const SATURATION_STORAGE_KEY = "local-first-todo.saturation";
@@ -106,8 +108,8 @@ const MOVE_BLOCKED_ALERT_MS = 5000;
 const BACKUP_VERSION = 1;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_DUE_DAYS = 365;
-const MANUAL_BIAS_STEP = 24;
-const MAX_MANUAL_BIAS = 144;
+const MANUAL_BIAS_STEP = 80;
+const MAX_MANUAL_BIAS = 520;
 const FLAGGED_SCORE = 220;
 const DAY_MINUTES = 24 * 60;
 
@@ -180,6 +182,10 @@ function isTaskImportance(value: unknown): value is TaskImportance {
 }
 
 function isTaskRepeat(value: unknown): value is TaskRepeat {
+  if (typeof value === "string" && /^custom:\d+$/.test(value)) {
+    return true;
+  }
+
   return (
     value === "none" ||
     value === "daily" ||
@@ -187,6 +193,33 @@ function isTaskRepeat(value: unknown): value is TaskRepeat {
     value === "monthly" ||
     value === "yearly"
   );
+}
+
+function normalizeCustomRepeatDays(value: unknown) {
+  const numericValue =
+    typeof value === "string" ? Number.parseInt(value, 10) : Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return 28;
+  }
+
+  return Math.max(1, Math.min(MAX_DUE_DAYS, Math.round(numericValue)));
+}
+
+function getCustomRepeatDays(repeat: TaskRepeat) {
+  if (!repeat.startsWith("custom:")) {
+    return 28;
+  }
+
+  return normalizeCustomRepeatDays(repeat.replace("custom:", ""));
+}
+
+function createCustomRepeat(days: unknown): TaskRepeat {
+  return `custom:${normalizeCustomRepeatDays(days)}`;
+}
+
+function getRepeatSelectValue(repeat: TaskRepeat) {
+  return repeat.startsWith("custom:") ? "custom" : repeat;
 }
 
 function isEstimateUnit(value: unknown): value is EstimateUnit {
@@ -371,7 +404,11 @@ function normalizeTask(value: unknown): Task | null {
     urgentBeforeDays: normalizeUrgentBeforeDays(task.urgentBeforeDays),
     sortOrder: normalizeSortOrder(task.sortOrder),
     details: typeof task.details === "string" ? task.details : "",
-    repeat: isTaskRepeat(task.repeat) ? task.repeat : "none",
+    repeat: isTaskRepeat(task.repeat)
+      ? task.repeat.startsWith("custom:")
+        ? createCustomRepeat(getCustomRepeatDays(task.repeat))
+        : task.repeat
+      : "none",
     flagged: typeof task.flagged === "boolean" ? task.flagged : false,
     flagType: isTaskFlagType(task.flagType) ? task.flagType : "red_flag",
     completed: task.completed,
@@ -727,10 +764,6 @@ function getUrgencyLabel(task: Task) {
 }
 
 function getImportanceLabel(importance: TaskImportance) {
-  if (importance === "medium") {
-    return "Normal";
-  }
-
   return importance[0].toUpperCase() + importance.slice(1);
 }
 
@@ -869,6 +902,12 @@ function createTaskFromDraft(draft: TaskDraft): Task {
 }
 
 function formatRepeat(value: TaskRepeat) {
+  if (value.startsWith("custom:")) {
+    const days = getCustomRepeatDays(value);
+
+    return `Every ${days} day${days === 1 ? "" : "s"}`;
+  }
+
   switch (value) {
     case "daily":
       return "Daily";
@@ -885,6 +924,11 @@ function formatRepeat(value: TaskRepeat) {
 
 function addRepeatInterval(date: Date, repeat: TaskRepeat) {
   const nextDate = new Date(date);
+
+  if (repeat.startsWith("custom:")) {
+    nextDate.setDate(nextDate.getDate() + getCustomRepeatDays(repeat));
+    return nextDate;
+  }
 
   if (repeat === "daily") {
     nextDate.setDate(nextDate.getDate() + 1);
@@ -962,7 +1006,11 @@ function fromTaskRow(row: TaskRow): Task {
     urgentBeforeDays: row.urgent_before_days,
     sortOrder: normalizeSortOrder(row.sort_order),
     details: row.details,
-    repeat: isTaskRepeat(row.repeat) ? row.repeat : "none",
+    repeat: isTaskRepeat(row.repeat)
+      ? row.repeat.startsWith("custom:")
+        ? createCustomRepeat(getCustomRepeatDays(row.repeat))
+        : row.repeat
+      : "none",
     flagged: row.flagged ?? false,
     flagType: isTaskFlagType(row.flag_type) ? row.flag_type : "red_flag",
     completed: row.completed,
@@ -2159,7 +2207,7 @@ export function App() {
                 }
               >
                 <option value="low">Low</option>
-                <option value="medium">Normal</option>
+                <option value="medium">Medium</option>
                 <option value="high">High</option>
               </select>
             </label>
@@ -2245,11 +2293,14 @@ export function App() {
             <label>
               <span>Repeat</span>
               <select
-                value={editingDraft.repeat}
+                value={getRepeatSelectValue(editingDraft.repeat)}
                 onChange={(event) =>
                   setEditingDraft({
                     ...editingDraft,
-                    repeat: event.target.value as TaskRepeat,
+                    repeat:
+                      event.target.value === "custom"
+                        ? createCustomRepeat(editingDraft.repeat.startsWith("custom:") ? getCustomRepeatDays(editingDraft.repeat) : 28)
+                        : (event.target.value as TaskRepeat),
                   })
                 }
               >
@@ -2258,8 +2309,26 @@ export function App() {
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>
+                <option value="custom">Custom days</option>
               </select>
             </label>
+            {editingDraft.repeat.startsWith("custom:") ? (
+              <label>
+                <span>Repeat every</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={MAX_DUE_DAYS}
+                  value={getCustomRepeatDays(editingDraft.repeat)}
+                  onChange={(event) =>
+                    setEditingDraft({
+                      ...editingDraft,
+                      repeat: createCustomRepeat(event.target.value),
+                    })
+                  }
+                />
+              </label>
+            ) : null}
 
             <label>
               <span>Marker style</span>
@@ -2392,7 +2461,7 @@ export function App() {
                     <p className="muted">Start time {formatTime(task.dueTime)}</p>
                   ) : null}
                   {task.estimatedDuration ? (
-                    <p className="muted">Effort size {task.estimatedDuration}</p>
+                    <p className="muted">Effort size: {task.estimatedDuration}</p>
                   ) : null}
                   {task.repeat !== "none" ? (
                     <p className="muted">Repeat: {formatRepeat(task.repeat)}</p>
@@ -2565,6 +2634,7 @@ export function App() {
             <div className="menu-header">
               <div>
                 <h2>Menu</h2>
+                <p className="version-label">Version {APP_VERSION}</p>
                 <p className="muted">{syncMessage}</p>
                 <p className="muted">
                   {lastSavedAt ? `Saved ${formatDate(lastSavedAt)}` : "Ready"}
@@ -2950,7 +3020,7 @@ export function App() {
                     }
                   >
                     <option value="low">Low</option>
-                    <option value="medium">Normal</option>
+                    <option value="medium">Medium</option>
                     <option value="high">High</option>
                   </select>
                 </label>
@@ -2995,11 +3065,14 @@ export function App() {
                   <label>
                     <span>Repeat</span>
                     <select
-                      value={draft.repeat}
+                      value={getRepeatSelectValue(draft.repeat)}
                       onChange={(event) =>
                         setDraft({
                           ...draft,
-                          repeat: event.target.value as TaskRepeat,
+                          repeat:
+                            event.target.value === "custom"
+                              ? createCustomRepeat(draft.repeat.startsWith("custom:") ? getCustomRepeatDays(draft.repeat) : 28)
+                              : (event.target.value as TaskRepeat),
                         })
                       }
                     >
@@ -3008,8 +3081,26 @@ export function App() {
                       <option value="weekly">Weekly</option>
                       <option value="monthly">Monthly</option>
                       <option value="yearly">Yearly</option>
+                      <option value="custom">Custom days</option>
                     </select>
                   </label>
+                  {draft.repeat.startsWith("custom:") ? (
+                    <label>
+                      <span>Repeat every</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={MAX_DUE_DAYS}
+                        value={getCustomRepeatDays(draft.repeat)}
+                        onChange={(event) =>
+                          setDraft({
+                            ...draft,
+                            repeat: createCustomRepeat(event.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                  ) : null}
 
                   <label className="toggle-row">
                     <span>Keep visible</span>

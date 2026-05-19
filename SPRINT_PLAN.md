@@ -438,3 +438,19 @@ Goal: Make it easier to paste the current Tile Todo list into ChatGPT without do
 - Copy a readable task summary plus full structured task data.
 - Keep the existing JSON export/import backup features.
 - Run a production build.
+
+## Sprint 28: Version 2.1 Ordering And Repeat Polish
+
+Goal: Make the current app version visible and smooth out task ordering, readability, and repeat controls.
+
+## Planned Scope
+
+- Add visible app version in the menu, starting at `2.1`.
+- Make manual tile movement stickier for low-priority tasks without overriding deadline-critical tasks.
+- Add the missing colon after `Effort size` in expanded info.
+- Increase tile title size slightly.
+- Better center the overdue exclamation mark.
+- Improve greyscale theme pill contrast.
+- Add custom repeat days, such as every 28 days, without requiring a database change.
+- Rename importance display from `Normal` to `Medium`.
+- Run a production build.
