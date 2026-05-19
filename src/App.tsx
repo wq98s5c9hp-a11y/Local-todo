@@ -33,8 +33,10 @@ type DropPlacement = {
   taskId: string;
   placement: "before" | "after";
 };
-type MenuTab = "settings" | "how-to" | "info";
+type MenuTab = "settings" | "how-to" | "info" | "archive";
 type SignupConfirmStep = "first" | "joke" | "second";
+type SortMode = "master" | "due" | "urgency" | "importance" | "effort" | "created";
+type SortDirection = "desc" | "asc";
 
 type Task = {
   id: string;
@@ -99,14 +101,17 @@ type TaskRow = {
 };
 
 const STORAGE_KEY = "local-first-todo.tasks";
-const APP_VERSION = "2.1";
+const APP_VERSION = "2.2";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
 const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
 const SATURATION_STORAGE_KEY = "local-first-todo.saturation";
 const SYNCED_USER_STORAGE_KEY = "local-first-todo.synced-user";
+const SORT_MODE_STORAGE_KEY = "local-first-todo.sort-mode";
+const SORT_DIRECTION_STORAGE_KEY = "local-first-todo.sort-direction";
 const MOVE_BLOCKED_ALERT_MS = 5000;
 const BACKUP_VERSION = 1;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const ARCHIVE_AFTER_DAYS = 7;
 const MAX_DUE_DAYS = 365;
 const MANUAL_BIAS_STEP = 80;
 const MAX_MANUAL_BIAS = 520;
@@ -168,6 +173,14 @@ const colorSchemeOptions: Array<{ value: ColorScheme; label: string }> = [
   { value: "tonal", label: "Tonal Contemporary" },
   { value: "grayscale", label: "Full Greyscale" },
 ];
+const sortModeOptions: Array<{ value: SortMode; label: string }> = [
+  { value: "master", label: "Master" },
+  { value: "due", label: "Due date" },
+  { value: "urgency", label: "Urgency" },
+  { value: "importance", label: "Importance" },
+  { value: "effort", label: "Effort size" },
+  { value: "created", label: "Created" },
+];
 
 function createId() {
   if ("crypto" in window && "randomUUID" in window.crypto) {
@@ -193,6 +206,21 @@ function isTaskRepeat(value: unknown): value is TaskRepeat {
     value === "monthly" ||
     value === "yearly"
   );
+}
+
+function isSortMode(value: unknown): value is SortMode {
+  return (
+    value === "master" ||
+    value === "due" ||
+    value === "urgency" ||
+    value === "importance" ||
+    value === "effort" ||
+    value === "created"
+  );
+}
+
+function isSortDirection(value: unknown): value is SortDirection {
+  return value === "asc" || value === "desc";
 }
 
 function normalizeCustomRepeatDays(value: unknown) {
@@ -481,6 +509,18 @@ function loadSaturation() {
   return Math.max(0, Math.min(100, Math.round(savedSaturation)));
 }
 
+function loadSortMode(): SortMode {
+  const savedMode = window.localStorage.getItem(SORT_MODE_STORAGE_KEY);
+
+  return isSortMode(savedMode) ? savedMode : "master";
+}
+
+function loadSortDirection(): SortDirection {
+  const savedDirection = window.localStorage.getItem(SORT_DIRECTION_STORAGE_KEY);
+
+  return isSortDirection(savedDirection) ? savedDirection : "desc";
+}
+
 function parseLocalDate(value: string) {
   if (!value) {
     return null;
@@ -557,6 +597,46 @@ function getStableTieBreak(task: Task) {
   }
 
   return hash / 1000000;
+}
+
+function compareValues(firstValue: number, secondValue: number, direction: SortDirection) {
+  return direction === "desc"
+    ? secondValue - firstValue
+    : firstValue - secondValue;
+}
+
+function compareOptionalValues(
+  firstValue: number | null,
+  secondValue: number | null,
+  direction: SortDirection,
+) {
+  if (firstValue === null && secondValue === null) {
+    return 0;
+  }
+
+  if (firstValue === null) {
+    return 1;
+  }
+
+  if (secondValue === null) {
+    return -1;
+  }
+
+  return compareValues(firstValue, secondValue, direction);
+}
+
+function getDueSortValue(task: Task) {
+  const daysUntilDue = getDaysUntilDue(task.dueDate);
+
+  return daysUntilDue;
+}
+
+function getEffortSortValue(task: Task) {
+  if (!task.estimatedDuration) {
+    return null;
+  }
+
+  return estimateUnits.indexOf(parseEstimateUnit(task.estimatedDuration));
 }
 
 function getDueScore(daysUntilDue: number | null) {
@@ -1037,23 +1117,115 @@ function mergeTasks(localTasks: Task[], cloudTasks: Task[]) {
   return Array.from(taskById.values());
 }
 
-function sortActiveTasks(taskList: Task[]) {
+function sortActiveTasks(
+  taskList: Task[],
+  sortMode: SortMode = "master",
+  sortDirection: SortDirection = "desc",
+) {
   const sortedTasks = taskList
     .filter((task) => !task.completed)
     .sort((firstTask, secondTask) => {
+      if (sortMode === "due") {
+        const difference = compareOptionalValues(
+          getDueSortValue(firstTask),
+          getDueSortValue(secondTask),
+          sortDirection,
+        );
+
+        if (difference !== 0) {
+          return difference;
+        }
+      }
+
+      if (sortMode === "urgency") {
+        const difference = compareValues(
+          getTaskBaseScore(firstTask),
+          getTaskBaseScore(secondTask),
+          sortDirection,
+        );
+
+        if (difference !== 0) {
+          return difference;
+        }
+      }
+
+      if (sortMode === "importance") {
+        const difference = compareValues(
+          importanceWeight[firstTask.importance],
+          importanceWeight[secondTask.importance],
+          sortDirection,
+        );
+
+        if (difference !== 0) {
+          return difference;
+        }
+      }
+
+      if (sortMode === "effort") {
+        const difference = compareOptionalValues(
+          getEffortSortValue(firstTask),
+          getEffortSortValue(secondTask),
+          sortDirection,
+        );
+
+        if (difference !== 0) {
+          return difference;
+        }
+      }
+
+      if (sortMode === "created") {
+        const difference = compareValues(
+          new Date(firstTask.createdAt).getTime(),
+          new Date(secondTask.createdAt).getTime(),
+          sortDirection,
+        );
+
+        if (difference !== 0) {
+          return difference;
+        }
+      }
+
       const scoreDifference = getTaskScore(secondTask) - getTaskScore(firstTask);
 
       if (scoreDifference !== 0) {
-        return scoreDifference;
+        return sortMode === "master" && sortDirection === "asc"
+          ? -scoreDifference
+          : scoreDifference;
       }
 
-      return (
+      const createdDifference =
         new Date(secondTask.createdAt).getTime() -
-        new Date(firstTask.createdAt).getTime()
-      );
+        new Date(firstTask.createdAt).getTime();
+
+      return sortMode === "master" && sortDirection === "asc"
+        ? -createdDifference
+        : createdDifference;
     });
 
-  return rebalanceVisibleFlaggedTasks(sortedTasks);
+  return sortMode === "master" && sortDirection === "desc"
+    ? rebalanceVisibleFlaggedTasks(sortedTasks)
+    : sortedTasks;
+}
+
+function sortCompletedTasks(taskList: Task[]) {
+  return [...taskList].sort((firstTask, secondTask) => {
+    const firstTime = firstTask.completedAt
+      ? new Date(firstTask.completedAt).getTime()
+      : 0;
+    const secondTime = secondTask.completedAt
+      ? new Date(secondTask.completedAt).getTime()
+      : 0;
+
+    return secondTime - firstTime;
+  });
+}
+
+function isArchivedTask(task: Task) {
+  if (!task.completed || !task.completedAt) {
+    return false;
+  }
+
+  return Date.now() - new Date(task.completedAt).getTime() > ARCHIVE_AFTER_DAYS * DAY_MS;
 }
 
 export function App() {
@@ -1085,6 +1257,10 @@ export function App() {
     loadColorScheme(),
   );
   const [saturation, setSaturation] = useState(() => loadSaturation());
+  const [sortMode, setSortMode] = useState<SortMode>(() => loadSortMode());
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() =>
+    loadSortDirection(),
+  );
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null);
   const [blockedMoveTaskId, setBlockedMoveTaskId] = useState<string | null>(null);
@@ -1152,6 +1328,14 @@ export function App() {
     );
     window.localStorage.setItem(SATURATION_STORAGE_KEY, String(saturation));
   }, [saturation]);
+
+  useEffect(() => {
+    window.localStorage.setItem(SORT_MODE_STORAGE_KEY, sortMode);
+  }, [sortMode]);
+
+  useEffect(() => {
+    window.localStorage.setItem(SORT_DIRECTION_STORAGE_KEY, sortDirection);
+  }, [sortDirection]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -1253,11 +1437,24 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const activeTasks = useMemo(() => sortActiveTasks(tasks), [tasks]);
+  const activeTasks = useMemo(
+    () => sortActiveTasks(tasks, sortMode, sortDirection),
+    [tasks, sortDirection, sortMode],
+  );
+
+  const allCompletedTasks = useMemo(
+    () => sortCompletedTasks(tasks.filter((task) => task.completed)),
+    [tasks],
+  );
 
   const completedTasks = useMemo(
-    () => tasks.filter((task) => task.completed),
-    [tasks],
+    () => allCompletedTasks.filter((task) => !isArchivedTask(task)),
+    [allCompletedTasks],
+  );
+
+  const archivedTasks = useMemo(
+    () => allCompletedTasks.filter(isArchivedTask),
+    [allCompletedTasks],
   );
 
   async function syncCloudTasks(nextTasks: Task[], currentUser = user) {
@@ -1911,18 +2108,20 @@ export function App() {
       rawTask: task,
     });
     const activeTasksForClipboard = activeTasks.map(taskForClipboard);
-    const completedTasksForClipboard = completedTasks.map(taskForClipboard);
+    const completedTasksForClipboard = allCompletedTasks.map(taskForClipboard);
     const payload = {
       app: "Tile Todo",
       exportedAt,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       summary: {
         activeTaskCount: activeTasks.length,
-        completedTaskCount: completedTasks.length,
+        completedTaskCount: allCompletedTasks.length,
+        archivedTaskCount: archivedTasks.length,
         totalTaskCount: tasks.length,
       },
       activeTasks: activeTasksForClipboard,
       completedTasks: completedTasksForClipboard,
+      archivedTasks: archivedTasks.map(taskForClipboard),
       allRawTasks: tasks,
     };
 
@@ -1943,7 +2142,7 @@ export function App() {
       "",
       `Exported: ${exportedAt}`,
       `Active tasks: ${activeTasks.length}`,
-      `Completed tasks: ${completedTasks.length}`,
+      `Completed tasks: ${allCompletedTasks.length}`,
       "",
       "## Active Task Summary",
       activeLines,
@@ -2613,15 +2812,48 @@ export function App() {
             </p>
           </div>
         </div>
-        <button
-          className="icon-button"
-          type="button"
-          aria-expanded={isMenuOpen}
-          aria-label="Open menu"
-          onClick={() => setIsMenuOpen(true)}
-        >
-          Menu
-        </button>
+        <div className="header-actions">
+          <label className="sort-pill">
+            <span>Sort</span>
+            <select
+              value={sortMode}
+              onChange={(event) =>
+                setSortMode(
+                  isSortMode(event.target.value) ? event.target.value : "master",
+                )
+              }
+            >
+              {sortModeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="sort-pill sort-direction-pill">
+            <span>Order</span>
+            <select
+              value={sortDirection}
+              onChange={(event) =>
+                setSortDirection(
+                  isSortDirection(event.target.value) ? event.target.value : "desc",
+                )
+              }
+            >
+              <option value="desc">Desc</option>
+              <option value="asc">Asc</option>
+            </select>
+          </label>
+          <button
+            className="icon-button"
+            type="button"
+            aria-expanded={isMenuOpen}
+            aria-label="Open menu"
+            onClick={() => setIsMenuOpen(true)}
+          >
+            Menu
+          </button>
+        </div>
       </header>
 
       {isMenuOpen ? (
@@ -2671,6 +2903,13 @@ export function App() {
                 onClick={() => setMenuTab("info")}
               >
                 Info
+              </button>
+              <button
+                type="button"
+                className={menuTab === "archive" ? "active" : ""}
+                onClick={() => setMenuTab("archive")}
+              >
+                Archive
               </button>
             </div>
 
@@ -2853,6 +3092,10 @@ export function App() {
                     <span className="help-sample chip-sample">2d</span>
                     Days until due. Red is soon, yellow is close, blue is later.
                   </p>
+                  <p>
+                    <span className="help-sample warning-sample">!</span>
+                    Overdue warning. This marks tasks that are past their due date.
+                  </p>
                 </div>
               </section>
             ) : null}
@@ -2874,6 +3117,23 @@ export function App() {
                   Account sync saves the same task list across devices when you
                   are signed in. The app still keeps a local copy in the browser.
                 </p>
+              </section>
+            ) : null}
+
+            {menuTab === "archive" ? (
+              <section className="menu-section archive-section">
+                <h3>Archive</h3>
+                <p className="muted">
+                  Completed tasks move here after one week. Restoring a task sends
+                  it back to Active Tasks.
+                </p>
+                {archivedTasks.length ? (
+                  <div className="task-grid menu-archive-grid">
+                    {archivedTasks.map((task) => renderTask(task))}
+                  </div>
+                ) : (
+                  <p className="task empty-state">Archived tasks will appear here.</p>
+                )}
               </section>
             ) : null}
           </aside>
@@ -3209,7 +3469,11 @@ export function App() {
           )}
 
           {activeTasks.map((task, index) =>
-            renderTask(task, isHighlightedTask(task, index), index),
+            renderTask(
+              task,
+              isHighlightedTask(task, index),
+              sortMode === "master" ? index : null,
+            ),
           )}
 
           {!activeTasks.length ? (
@@ -3219,16 +3483,25 @@ export function App() {
       </section>
 
       <section aria-labelledby="completed-tasks">
-        <h2 id="completed-tasks">Completed Archive</h2>
-        {completedTasks.length ? (
-          <div className="task-grid">
-            {completedTasks.map((task) => renderTask(task))}
-          </div>
-        ) : (
-          <div className="task-grid">
+        <h2 id="completed-tasks">Completed Tasks</h2>
+        <div className="task-grid">
+          {completedTasks.length ? (
+            completedTasks.map((task) => renderTask(task))
+          ) : (
             <p className="task empty-state">Completed tasks will appear here.</p>
-          </div>
-        )}
+          )}
+          <button
+            className="task archive-link-tile"
+            type="button"
+            onClick={() => {
+              setMenuTab("archive");
+              setIsMenuOpen(true);
+            }}
+          >
+            <span className="archive-link-pill">Archive</span>
+            <span className="muted">{archivedTasks.length} archived</span>
+          </button>
+        </div>
       </section>
     </main>
   );

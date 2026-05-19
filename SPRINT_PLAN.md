@@ -454,3 +454,22 @@ Goal: Make the current app version visible and smooth out task ordering, readabi
 - Add custom repeat days, such as every 28 days, without requiring a database change.
 - Rename importance display from `Normal` to `Medium`.
 - Run a production build.
+
+## Sprint 29: Sort Controls And Archive Split
+
+Goal: Add quick alternate sorting views and keep older completed tasks out of the main screen.
+
+## Planned Scope
+
+- Add a Sort control to the left of Menu.
+- Support Master, due date, urgency, importance, effort size, and created-date sorting.
+- Add ascending/descending order control.
+- Keep manual drag movement tied to Master sorting.
+- Rename the lower section from `Completed Archive` to `Completed Tasks`.
+- Move completed tasks older than one week into an Archive tab in the menu.
+- Add an always-visible Archive tile at the end of Completed Tasks.
+- Sort completed and archived tasks by completed date/time, newest first.
+- Add a How to use entry for the overdue exclamation mark.
+- Slightly reduce vertical space between the header and Active Tasks.
+- Bump visible version to `2.2`.
+- Run a production build.

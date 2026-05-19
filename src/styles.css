@@ -425,7 +425,7 @@ label {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.35rem;
 }
 
 .brand-block {
@@ -453,9 +453,13 @@ h1 {
 }
 
 h2 {
-  margin-top: 2rem;
+  margin-top: 1.45rem;
   margin-bottom: 0.75rem;
   font-size: 1.1rem;
+}
+
+.app-shell > section:first-of-type h2 {
+  margin-top: 1rem;
 }
 
 h3 {
@@ -486,6 +490,47 @@ h3 {
 .icon-button {
   min-height: 36px;
   padding: 0.45rem 0.7rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.sort-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 36px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 0 0.55rem;
+  color: var(--text);
+}
+
+.sort-pill span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.sort-pill select {
+  min-height: 30px;
+  width: 6.6rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.sort-direction-pill select {
+  width: 4.4rem;
 }
 
 .import-button {
@@ -556,7 +601,7 @@ h3 {
 
 .menu-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.35rem;
 }
 
@@ -583,6 +628,10 @@ h3 {
 .help-section,
 .info-section {
   gap: 0.8rem;
+}
+
+.archive-section {
+  min-width: 0;
 }
 
 .help-list {
@@ -647,6 +696,15 @@ h3 {
   background: var(--chip-bg);
   color: var(--warn);
   padding-inline: 0.45rem;
+}
+
+.warning-sample {
+  background: var(--chip-bg);
+  color: var(--bad);
+}
+
+.menu-archive-grid {
+  grid-template-columns: repeat(auto-fill, minmax(170px, 196px));
 }
 
 .confirm-backdrop {
@@ -883,6 +941,29 @@ h3 {
 .task-completed.task-editing {
   background: var(--archive-tile);
   color: var(--archive-text);
+}
+
+.archive-link-tile {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.6rem;
+  background: var(--surface-strong);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.archive-link-pill {
+  display: inline-flex;
+  min-height: 2.2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  padding: 0.35rem 1rem;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 850;
 }
 
 .task-dragging {
@@ -1432,6 +1513,27 @@ h3 {
     padding: 0.6rem 0.5rem;
     background: color-mix(in srgb, var(--bg) 94%, transparent);
     backdrop-filter: blur(10px);
+  }
+
+  .header-actions {
+    gap: 0.25rem;
+  }
+
+  .sort-pill {
+    padding-inline: 0.4rem;
+  }
+
+  .sort-pill span {
+    display: none;
+  }
+
+  .sort-pill select {
+    width: 5.5rem;
+    font-size: 0.82rem;
+  }
+
+  .sort-direction-pill select {
+    width: 3.6rem;
   }
 
   .backup-actions {

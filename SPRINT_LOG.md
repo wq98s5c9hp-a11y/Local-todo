@@ -797,3 +797,36 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 29 Approval
+
+- CEO requested Sort controls to the left of Menu.
+- CEO requested Master plus due date, urgency, importance, effort size, and other useful sort modes.
+- CEO requested ascending/descending ordering.
+- CEO requested completed tasks older than one week move into a menu Archive tab.
+- CEO requested the lower section be renamed `Completed Tasks`.
+- CEO requested an always-visible Archive tile at the end of Completed Tasks.
+- CEO requested completed and archived task lists sort by completed date/time, newest first.
+- CEO requested a How to use line for the overdue exclamation mark.
+- CEO requested less empty vertical space between the header and Active Tasks.
+
+### Sprint 29 Implementation Changes
+
+- Added visible Sort and Order controls to the header, to the left of Menu.
+- Added sort modes for Master, due date, urgency, importance, effort size, and created date.
+- Added ascending and descending order selection.
+- Hid drag handles outside Master sort so manual movement only applies to the master ordering.
+- Renamed the lower section to `Completed Tasks`.
+- Split completed tasks so items completed more than seven days ago appear in the menu Archive tab.
+- Added an Archive tab as the fourth menu pill.
+- Added an always-visible Archive tile at the end of Completed Tasks.
+- Sorted completed and archived tasks by completed date/time, newest first.
+- Kept archived tasks restorable back to Active Tasks.
+- Added an overdue exclamation mark line to How to use.
+- Reduced the vertical gap between the header and Active Tasks.
+- Bumped visible app version to `2.2` and package version to `2.2.0`.
+
+### Sprint 29 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.
