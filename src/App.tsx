@@ -101,7 +101,7 @@ type TaskRow = {
 };
 
 const STORAGE_KEY = "local-first-todo.tasks";
-const APP_VERSION = "2.3";
+const APP_VERSION = "2.4";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
 const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
 const SATURATION_STORAGE_KEY = "local-first-todo.saturation";
@@ -1342,6 +1342,18 @@ export function App() {
   }, [sortDirection]);
 
   useEffect(() => {
+    if (!importMessage) {
+      return undefined;
+    }
+
+    const messageTimer = window.setTimeout(() => {
+      setImportMessage("");
+    }, 90000);
+
+    return () => window.clearTimeout(messageTimer);
+  }, [importMessage]);
+
+  useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
 
@@ -2177,7 +2189,7 @@ export function App() {
         textArea.remove();
       }
 
-      setImportMessage("Copied full Tile Todo data for ChatGPT.");
+      setImportMessage("Copied Tile Todo data.");
     } catch {
       setImportMessage("Could not copy data. Try Export instead.");
     }
@@ -3039,6 +3051,9 @@ export function App() {
 
                 <section className="menu-section">
                   <h3>Backup</h3>
+                  {importMessage ? (
+                    <p className="import-message backup-message">{importMessage}</p>
+                  ) : null}
                   <div className="backup-actions">
                     <button type="button" onClick={copyDataToClipboard}>
                       Copy data to clipboard
@@ -3195,8 +3210,6 @@ export function App() {
           </div>
         </div>
       ) : null}
-
-      {importMessage ? <p className="import-message">{importMessage}</p> : null}
 
       <section aria-labelledby="active-tasks">
         <h2 id="active-tasks">Active Tasks</h2>

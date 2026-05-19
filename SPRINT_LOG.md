@@ -852,3 +852,23 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 31 Approval
+
+- CEO reported copy-data feedback appears on the home screen.
+- CEO requested backup/import feedback appear under the Backup title in menu settings.
+- CEO requested the clipboard success message say `Copied Tile Todo data.`
+- CEO requested the feedback disappear after 90 seconds.
+
+### Sprint 31 Implementation Changes
+
+- Moved backup/import feedback from the home screen into the Backup section.
+- Changed clipboard success text to `Copied Tile Todo data.`
+- Removed the ChatGPT-specific wording from the copy confirmation.
+- Added a 90-second auto-clear timer for backup/import feedback messages.
+- Bumped visible app version to `2.4` and package version to `2.4.0`.
+
+### Sprint 31 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

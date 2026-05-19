@@ -487,3 +487,16 @@ Goal: Make the two-column mobile home screen feel cleaner and less crowded.
 - Keep the full ascending/descending language visible in the dropdown choices.
 - Bump visible version to `2.3`.
 - Run a production build.
+
+## Sprint 31: Backup Feedback Placement
+
+Goal: Keep backup/import feedback inside the menu where the action happened.
+
+## Planned Scope
+
+- Move copy/import feedback under the Backup heading in menu settings.
+- Change clipboard success message to `Copied Tile Todo data.`
+- Remove `for ChatGPT` from the message.
+- Clear backup feedback automatically after 90 seconds.
+- Bump visible version to `2.4`.
+- Run a production build.
