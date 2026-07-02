@@ -101,7 +101,7 @@ type TaskRow = {
 };
 
 const STORAGE_KEY = "local-first-todo.tasks";
-const APP_VERSION = "2.5";
+const APP_VERSION = "2.6";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
 const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
 const SATURATION_STORAGE_KEY = "local-first-todo.saturation";
@@ -1289,6 +1289,7 @@ export function App() {
     loadSortDirection(),
   );
   const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null);
   const [blockedMoveTaskId, setBlockedMoveTaskId] = useState<string | null>(null);
@@ -1376,6 +1377,17 @@ export function App() {
 
     return () => window.clearTimeout(messageTimer);
   }, [importMessage]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 520);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -3615,6 +3627,16 @@ export function App() {
           </button>
         </div>
       </section>
+      <button
+        className={showBackToTop ? "back-to-top visible" : "back-to-top"}
+        type="button"
+        aria-hidden={!showBackToTop}
+        tabIndex={showBackToTop ? 0 : -1}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      >
+        <span aria-hidden="true">↑</span>
+        Back to top
+      </button>
     </main>
   );
 }

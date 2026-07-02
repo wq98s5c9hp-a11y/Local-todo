@@ -896,3 +896,21 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 33 Approval
+
+- CEO requested a floating `Back to top` button for long task lists.
+- CEO requested the button appear after scrolling down and return the user to the top of the page.
+
+### Sprint 33 Implementation Changes
+
+- Added a scroll-aware floating `↑ Back to top` button.
+- Kept the button hidden while the user is near the top of the page.
+- Added smooth scrolling back to the top when the button is clicked.
+- Styled the button as a compact rounded control in the lower corner.
+- Bumped visible app version to `2.6` and package version to `2.6.0`.
+
+### Sprint 33 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

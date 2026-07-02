@@ -523,3 +523,16 @@ Goal: Make the home screen more helpful and compact without adding a new task da
 - Add subtasks inside task details/editing, not the main create form.
 - Sync subtasks with account data.
 - Provide copyable SQL in chat if Supabase needs a migration.
+
+## Sprint 33: Back To Top Button
+
+Goal: Make long task lists easier to navigate after scrolling down.
+
+## Planned Scope
+
+- Show a floating `↑ Back to top` button after the user scrolls down the page.
+- Keep the button hidden near the top of the page.
+- Smooth-scroll back to the top when tapped.
+- Keep the control compact and mobile-friendly.
+- Bump visible version to `2.6`.
+- Run a production build.
