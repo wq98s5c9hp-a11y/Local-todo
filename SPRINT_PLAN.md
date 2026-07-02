@@ -500,3 +500,26 @@ Goal: Keep backup/import feedback inside the menu where the action happened.
 - Clear backup feedback automatically after 90 seconds.
 - Bump visible version to `2.4`.
 - Run a production build.
+
+## Sprint 32: Faster What Should I Do And Mobile Header Polish
+
+Goal: Make the home screen more helpful and compact without adding a new task data model.
+
+## Planned Scope
+
+- Add roadmap entries for subtasks, the next-task chooser, stacked branding, cleaner sort controls, and arrow-only sort direction.
+- Add a `What should I do?` button near the Tile Todo logo and name.
+- Suggest the shortest estimated-effort active task, using urgency as the tie-breaker.
+- Fall back to the current master-sorted top task when no active task has an effort size.
+- Stack the Tile Todo name so mobile branding is compact.
+- Keep the sort mode dropdown but make it visually quieter.
+- Replace the ascending/descending dropdown with a one-tap arrow toggle.
+- Defer subtasks to Sprint 33.
+- Bump visible version to `2.5`.
+- Run a production build.
+
+## Suggested Sprint 33
+
+- Add subtasks inside task details/editing, not the main create form.
+- Sync subtasks with account data.
+- Provide copyable SQL in chat if Supabase needs a migration.

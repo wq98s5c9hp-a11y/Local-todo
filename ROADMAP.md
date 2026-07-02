@@ -322,6 +322,10 @@ Completed features:
 - Desktop display mode for an always-visible view.
 - Move older archive tasks into a menu-accessible archive window while keeping recent archive items under the main list.
 - Sort controls near the menu for due date, urgency, estimated time, and other task metrics, plus a master sort that returns to the user's manually arranged order.
+- Subtasks inside task details for breaking large tasks into smaller steps without cluttering the main create form.
+- A `What should I do?` chooser that suggests a short, urgent next task from the active list.
+- Stacked Tile Todo branding and lighter-weight sort controls for the mobile two-column layout.
+- A one-tap up/down sort direction toggle instead of an ascending/descending dropdown.
 - Multi-select and multi-delete for batch task cleanup.
 - A daily "I worked on this task" action that highlights worked-on tasks for the day, awards points, adds completion points, and tracks daily point targets against a running total.
 - Authenticated AI API access so the user's normal AI account can read and update tasks with permission.
@@ -353,6 +357,10 @@ These are intentionally outside version 1:
 - Desktop display mode
 - Menu archive window with only recent completed tasks visible below the main list
 - Sort button with due date, urgency, estimated time, other metric sorts, and a master/manual-order sort
+- Subtasks inside task details
+- `What should I do?` / next-task suggestion button
+- Stacked Tile Todo mobile branding
+- One-tap sort direction toggle
 - Multi-select and multi-delete
 - Daily worked-on action, point totals, completion points, daily point targets, and running positive/negative balance
 - Authenticated AI API access for reading/updating tasks from a normal AI account

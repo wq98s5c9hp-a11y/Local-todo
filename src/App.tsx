@@ -101,7 +101,7 @@ type TaskRow = {
 };
 
 const STORAGE_KEY = "local-first-todo.tasks";
-const APP_VERSION = "2.4";
+const APP_VERSION = "2.5";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
 const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
 const SATURATION_STORAGE_KEY = "local-first-todo.saturation";
@@ -181,11 +181,6 @@ const sortModeOptions: Array<{ value: SortMode; label: string }> = [
   { value: "effort", label: "Effort size" },
   { value: "created", label: "Created" },
 ];
-const sortDirectionOptions: Array<{ value: SortDirection; label: string }> = [
-  { value: "desc", label: "↓ Descending" },
-  { value: "asc", label: "↑ Ascending" },
-];
-
 function createId() {
   if ("crypto" in window && "randomUUID" in window.crypto) {
     return window.crypto.randomUUID();
@@ -1224,6 +1219,34 @@ function sortCompletedTasks(taskList: Task[]) {
   });
 }
 
+function getSuggestedNextTask(taskList: Task[]) {
+  const effortTasks = taskList.filter(
+    (task) => !task.completed && getEffortSortValue(task) !== null,
+  );
+
+  if (!effortTasks.length) {
+    return sortActiveTasks(taskList, "master", "desc")[0] ?? null;
+  }
+
+  return [...effortTasks].sort((firstTask, secondTask) => {
+    const effortDifference =
+      (getEffortSortValue(firstTask) ?? Number.MAX_SAFE_INTEGER) -
+      (getEffortSortValue(secondTask) ?? Number.MAX_SAFE_INTEGER);
+
+    if (effortDifference !== 0) {
+      return effortDifference;
+    }
+
+    const urgencyDifference = getTaskScore(secondTask) - getTaskScore(firstTask);
+
+    if (urgencyDifference !== 0) {
+      return urgencyDifference;
+    }
+
+    return getStableTieBreak(firstTask) - getStableTieBreak(secondTask);
+  })[0];
+}
+
 function isArchivedTask(task: Task) {
   if (!task.completed || !task.completedAt) {
     return false;
@@ -1265,6 +1288,7 @@ export function App() {
   const [sortDirection, setSortDirection] = useState<SortDirection>(() =>
     loadSortDirection(),
   );
+  const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null);
   const [blockedMoveTaskId, setBlockedMoveTaskId] = useState<string | null>(null);
@@ -1471,6 +1495,11 @@ export function App() {
   const archivedTasks = useMemo(
     () => allCompletedTasks.filter(isArchivedTask),
     [allCompletedTasks],
+  );
+
+  const suggestedNextTask = useMemo(
+    () => getSuggestedNextTask(tasks),
+    [tasks],
   );
 
   async function syncCloudTasks(nextTasks: Task[], currentUser = user) {
@@ -2821,8 +2850,70 @@ export function App() {
             alt=""
             aria-hidden="true"
           />
-          <div>
-            <h1>Tile Todo</h1>
+          <div className="brand-copy">
+            <h1>
+              <span>Tile</span>
+              <span>Todo</span>
+            </h1>
+          </div>
+          <div className="suggestion-wrap">
+            <button
+              className="next-task-button"
+              type="button"
+              onClick={() => setIsSuggestionOpen((isOpen) => !isOpen)}
+            >
+              What should I do?
+            </button>
+            {isSuggestionOpen ? (
+              <div className="task-suggestion-popover" role="dialog" aria-label="Suggested next task">
+                {suggestedNextTask ? (
+                  <>
+                    <p className="suggestion-eyebrow">Suggested next task</p>
+                    <h2>{suggestedNextTask.title}</h2>
+                    <div className="suggestion-meta">
+                      {suggestedNextTask.estimatedDuration ? (
+                        <span>{suggestedNextTask.estimatedDuration}</span>
+                      ) : (
+                        <span>Top task</span>
+                      )}
+                      <span>{getImportanceLabel(suggestedNextTask.importance)}</span>
+                      {getDaysUntilDue(suggestedNextTask.dueDate) !== null ? (
+                        <span>
+                          {getDaysUntilDue(suggestedNextTask.dueDate) === 0
+                            ? "Due today"
+                            : `${getDaysUntilDue(suggestedNextTask.dueDate)}d`}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="suggestion-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExpandedTaskIds(new Set([suggestedNextTask.id]));
+                          setIsSuggestionOpen(false);
+                        }}
+                      >
+                        Open details
+                      </button>
+                      <button type="button" onClick={() => setIsSuggestionOpen(false)}>
+                        Close
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="suggestion-eyebrow">Suggested next task</p>
+                    <h2>No active tasks</h2>
+                    <p className="muted">Add a task and I can pick a quick next step.</p>
+                    <div className="suggestion-actions">
+                      <button type="button" onClick={() => setIsSuggestionOpen(false)}>
+                        Close
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="header-actions">
@@ -2844,24 +2935,25 @@ export function App() {
               ))}
             </select>
           </label>
-          <label className="sort-pill sort-direction-pill">
-            <span className="visually-hidden">Sort order</span>
-            <select
-              aria-label="Sort order"
-              value={sortDirection}
-              onChange={(event) =>
-                setSortDirection(
-                  isSortDirection(event.target.value) ? event.target.value : "desc",
-                )
-              }
-            >
-              {sortDirectionOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <button
+            className="sort-pill sort-direction-toggle"
+            type="button"
+            aria-label={
+              sortDirection === "desc"
+                ? "Sort descending. Tap to sort ascending."
+                : "Sort ascending. Tap to sort descending."
+            }
+            title={
+              sortDirection === "desc"
+                ? "Descending. Tap for ascending."
+                : "Ascending. Tap for descending."
+            }
+            onClick={() =>
+              setSortDirection((direction) => (direction === "desc" ? "asc" : "desc"))
+            }
+          >
+            {sortDirection === "desc" ? "↓" : "↑"}
+          </button>
           <button
             className="icon-button"
             type="button"

@@ -872,3 +872,27 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 32 Approval
+
+- CEO approved adding roadmap entries for subtasks and a `What should I do?` next-task chooser.
+- CEO approved implementing the chooser now and deferring subtasks to a focused later sprint.
+- CEO requested stacked Tile Todo branding.
+- CEO requested cleaner sort pills and a sort direction pill that toggles between up and down arrows.
+
+### Sprint 32 Implementation Changes
+
+- Added roadmap entries for subtasks, the next-task chooser, stacked branding, cleaner sort controls, and arrow-only sort direction.
+- Added a `What should I do?` button in the header.
+- Added a suggestion popup that chooses the shortest estimated-effort active task and uses urgency as the tie-breaker.
+- Added a fallback to the current master-sorted top task when no active task has an effort size.
+- Added `Open details` and `Close` actions to the suggestion popup.
+- Stacked the Tile Todo name in the header.
+- Kept the sort mode dropdown but made the sort controls visually quieter.
+- Replaced the ascending/descending dropdown with a one-tap arrow toggle.
+- Bumped visible app version to `2.5` and package version to `2.5.0`.
+
+### Sprint 32 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.
