@@ -553,3 +553,15 @@ Goal: Make large tasks easier to break down and make task details/theme controls
 - Update Supabase schema support for subtasks.
 - Bump visible version to `2.7`.
 - Run a production build.
+
+## Sprint 35: Create-Time Subtasks
+
+Goal: Let tasks be created with subtasks while keeping the default create form simple.
+
+## Planned Scope
+
+- Add subtask controls inside the collapsed `Notes & Details` section of the create-task panel.
+- Keep subtasks out of the default visible create fields.
+- Save create-time subtasks with the new task.
+- Bump visible version to `2.8`.
+- Run a production build.

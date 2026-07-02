@@ -116,7 +116,7 @@ type TaskRow = {
 };
 
 const STORAGE_KEY = "local-first-todo.tasks";
-const APP_VERSION = "2.7";
+const APP_VERSION = "2.8";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
 const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
 const CUSTOM_THEME_STORAGE_KEY = "local-first-todo.custom-theme";
@@ -2335,6 +2335,43 @@ export function App() {
     }));
   }
 
+  function updateDraftSubtaskTitle(subtaskId: string, title: string) {
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      subtasks: currentDraft.subtasks.map((subtask) =>
+        subtask.id === subtaskId ? { ...subtask, title } : subtask,
+      ),
+    }));
+  }
+
+  function toggleDraftSubtask(subtaskId: string) {
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      subtasks: currentDraft.subtasks.map((subtask) =>
+        subtask.id === subtaskId
+          ? { ...subtask, completed: !subtask.completed }
+          : subtask,
+      ),
+    }));
+  }
+
+  function addDraftSubtask() {
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      subtasks: [
+        ...currentDraft.subtasks,
+        { id: createId(), title: "", completed: false },
+      ],
+    }));
+  }
+
+  function deleteDraftSubtask(subtaskId: string) {
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      subtasks: currentDraft.subtasks.filter((subtask) => subtask.id !== subtaskId),
+    }));
+  }
+
   function toggleTaskSubtask(taskId: string, subtaskId: string) {
     persistTasks(
       tasks.map((task) =>
@@ -3857,6 +3894,48 @@ export function App() {
                       rows={3}
                     />
                   </label>
+
+                  <div className="subtask-editor">
+                    <div className="subtask-editor-header">
+                      <span>Subtasks</span>
+                      <button type="button" onClick={addDraftSubtask}>
+                        Add subtask
+                      </button>
+                    </div>
+                    {draft.subtasks.length ? (
+                      <div className="subtask-edit-list">
+                        {draft.subtasks.map((subtask) => (
+                          <div className="subtask-edit-row" key={subtask.id}>
+                            <input
+                              type="checkbox"
+                              checked={subtask.completed}
+                              aria-label="Subtask complete"
+                              onChange={() => toggleDraftSubtask(subtask.id)}
+                            />
+                            <input
+                              value={subtask.title}
+                              onChange={(event) =>
+                                updateDraftSubtaskTitle(
+                                  subtask.id,
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="Subtask"
+                            />
+                            <button
+                              type="button"
+                              aria-label="Delete subtask"
+                              onClick={() => deleteDraftSubtask(subtask.id)}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="field-help">Break a big task into smaller steps.</p>
+                    )}
+                  </div>
 
                   <label>
                     <span>Repeat</span>

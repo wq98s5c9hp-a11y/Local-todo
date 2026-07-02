@@ -123,7 +123,7 @@ Details should be hidden from the main row until the user opens them.
 
 Each task can include subtasks for breaking larger work into smaller steps.
 
-Subtasks should live inside task details/editing, not the main create-task form, so quick capture stays lightweight.
+Subtasks should live inside the collapsed Notes & Details area during task creation and inside task details/editing afterward, so quick capture stays lightweight.
 
 Each subtask can be checked off without completing the parent task.
 

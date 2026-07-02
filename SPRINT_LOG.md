@@ -939,3 +939,21 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 35 Approval
+
+- CEO confirmed Supabase was updated.
+- CEO requested adding subtasks while creating a new task, not only in the edit window.
+
+### Sprint 35 Implementation Changes
+
+- Added subtask controls inside the create panel's collapsed `Notes & Details` section.
+- Kept subtasks out of the default visible create fields.
+- Create-time subtasks now save with the new task.
+- Updated the product spec to reflect create-time subtasks.
+- Bumped visible app version to `2.8` and package version to `2.8.0`.
+
+### Sprint 35 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.
