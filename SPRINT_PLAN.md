@@ -536,3 +536,20 @@ Goal: Make long task lists easier to navigate after scrolling down.
 - Keep the control compact and mobile-friendly.
 - Bump visible version to `2.6`.
 - Run a production build.
+
+## Sprint 34: Subtasks, Better Info, And Custom Theme
+
+Goal: Make large tasks easier to break down and make task details/theme controls more useful without changing the quick create flow.
+
+## Planned Scope
+
+- Add subtasks inside task editing and the expanded details view only.
+- Keep subtasks out of the main create-task form.
+- Let subtasks be checked from the details view.
+- Improve the details view into clearer Notes, Subtasks, and Info sections.
+- Add custom theme controls for primary tile, secondary action, and background colours.
+- Add a `Save theme` action and persist the custom theme locally.
+- Polish the `What should I do?` and sort pills.
+- Update Supabase schema support for subtasks.
+- Bump visible version to `2.7`.
+- Run a production build.

@@ -48,6 +48,7 @@ The user can create a new task with:
 - Repeat option
 - Keep-visible flag and visual marker style
 - Optional details
+- Optional subtasks inside task details/editing
 
 The title is required. Other fields should be easy to set but should not make capture feel slow.
 
@@ -117,6 +118,18 @@ Each task can include a broad duration block. Duration, start time, and end time
 Each task can include a details field for important info, notes, links, or context.
 
 Details should be hidden from the main row until the user opens them.
+
+### Add Subtasks
+
+Each task can include subtasks for breaking larger work into smaller steps.
+
+Subtasks should live inside task details/editing, not the main create-task form, so quick capture stays lightweight.
+
+Each subtask can be checked off without completing the parent task.
+
+### Custom Appearance
+
+The user can choose from preset colour schemes or save a custom theme with primary tile, secondary action, and background colours.
 
 ### Separate Active And Completed Tasks
 

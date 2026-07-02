@@ -28,7 +28,13 @@ type ColorScheme =
   | "mustard"
   | "acid"
   | "tonal"
-  | "grayscale";
+  | "grayscale"
+  | "custom";
+type CustomTheme = {
+  primary: string;
+  secondary: string;
+  tertiary: string;
+};
 type DropPlacement = {
   taskId: string;
   placement: "before" | "after";
@@ -50,6 +56,7 @@ type Task = {
   urgentBeforeDays: number;
   sortOrder: number | null;
   details: string;
+  subtasks: TaskSubtask[];
   repeat: TaskRepeat;
   flagged: boolean;
   flagType: TaskFlagType;
@@ -69,9 +76,16 @@ type TaskDraft = {
   durationMinutes: number | null;
   urgentBeforeDays: number;
   details: string;
+  subtasks: TaskSubtask[];
   repeat: TaskRepeat;
   flagged: boolean;
   flagType: TaskFlagType;
+};
+
+type TaskSubtask = {
+  id: string;
+  title: string;
+  completed: boolean;
 };
 
 type StoredTask = Partial<Task> & {
@@ -91,6 +105,7 @@ type TaskRow = {
   urgent_before_days: number;
   sort_order: number | null;
   details: string;
+  subtasks?: TaskSubtask[];
   repeat: TaskRepeat;
   flagged: boolean;
   flag_type: TaskFlagType;
@@ -101,9 +116,10 @@ type TaskRow = {
 };
 
 const STORAGE_KEY = "local-first-todo.tasks";
-const APP_VERSION = "2.6";
+const APP_VERSION = "2.7";
 const THEME_STORAGE_KEY = "local-first-todo.theme";
 const COLOR_SCHEME_STORAGE_KEY = "local-first-todo.color-scheme";
+const CUSTOM_THEME_STORAGE_KEY = "local-first-todo.custom-theme";
 const SATURATION_STORAGE_KEY = "local-first-todo.saturation";
 const SYNCED_USER_STORAGE_KEY = "local-first-todo.synced-user";
 const SORT_MODE_STORAGE_KEY = "local-first-todo.sort-mode";
@@ -128,6 +144,7 @@ const emptyDraft: TaskDraft = {
   durationMinutes: null,
   urgentBeforeDays: 1,
   details: "",
+  subtasks: [],
   repeat: "none",
   flagged: false,
   flagType: "red_flag",
@@ -172,7 +189,13 @@ const colorSchemeOptions: Array<{ value: ColorScheme; label: string }> = [
   { value: "acid", label: "Acid Terminal" },
   { value: "tonal", label: "Tonal Contemporary" },
   { value: "grayscale", label: "Full Greyscale" },
+  { value: "custom", label: "Custom Theme" },
 ];
+const defaultCustomTheme: CustomTheme = {
+  primary: "#00a7c8",
+  secondary: "#d1008f",
+  tertiary: "#f7f3e8",
+};
 const sortModeOptions: Array<{ value: SortMode; label: string }> = [
   { value: "master", label: "Master" },
   { value: "due", label: "Due date" },
@@ -277,8 +300,44 @@ function isColorScheme(value: unknown): value is ColorScheme {
     value === "mustard" ||
     value === "acid" ||
     value === "tonal" ||
-    value === "grayscale"
+    value === "grayscale" ||
+    value === "custom"
   );
+}
+
+function isHexColor(value: unknown): value is string {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
+function getReadableTextColor(background: string) {
+  if (!isHexColor(background)) {
+    return "#ffffff";
+  }
+
+  const red = Number.parseInt(background.slice(1, 3), 16);
+  const green = Number.parseInt(background.slice(3, 5), 16);
+  const blue = Number.parseInt(background.slice(5, 7), 16);
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000;
+
+  return brightness > 145 ? "#111411" : "#ffffff";
+}
+
+function normalizeCustomTheme(value: unknown): CustomTheme {
+  if (!value || typeof value !== "object") {
+    return defaultCustomTheme;
+  }
+
+  const theme = value as Partial<CustomTheme>;
+
+  return {
+    primary: isHexColor(theme.primary) ? theme.primary : defaultCustomTheme.primary,
+    secondary: isHexColor(theme.secondary)
+      ? theme.secondary
+      : defaultCustomTheme.secondary,
+    tertiary: isHexColor(theme.tertiary)
+      ? theme.tertiary
+      : defaultCustomTheme.tertiary,
+  };
 }
 
 function normalizeUrgentBeforeDays(value: unknown) {
@@ -311,6 +370,33 @@ function normalizeDurationMinutes(value: unknown) {
   }
 
   return Math.min(DAY_MINUTES, Math.round(value / 15) * 15);
+}
+
+function normalizeSubtasks(value: unknown): TaskSubtask[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((subtask) => {
+    if (!subtask || typeof subtask !== "object") {
+      return [];
+    }
+
+    const candidate = subtask as Partial<TaskSubtask>;
+    const title = typeof candidate.title === "string" ? candidate.title.trim() : "";
+
+    if (!title) {
+      return [];
+    }
+
+    return [
+      {
+        id: typeof candidate.id === "string" ? candidate.id : createId(),
+        title,
+        completed: typeof candidate.completed === "boolean" ? candidate.completed : false,
+      },
+    ];
+  });
 }
 
 function minutesToTimeValue(totalMinutes: number) {
@@ -431,6 +517,7 @@ function normalizeTask(value: unknown): Task | null {
     urgentBeforeDays: normalizeUrgentBeforeDays(task.urgentBeforeDays),
     sortOrder: normalizeSortOrder(task.sortOrder),
     details: typeof task.details === "string" ? task.details : "",
+    subtasks: normalizeSubtasks(task.subtasks),
     repeat: isTaskRepeat(task.repeat)
       ? task.repeat.startsWith("custom:")
         ? createCustomRepeat(getCustomRepeatDays(task.repeat))
@@ -490,6 +577,20 @@ function loadColorScheme(): ColorScheme {
   }
 
   return isColorScheme(savedScheme) ? savedScheme : "earth";
+}
+
+function loadCustomTheme(): CustomTheme {
+  const savedTheme = window.localStorage.getItem(CUSTOM_THEME_STORAGE_KEY);
+
+  if (!savedTheme) {
+    return defaultCustomTheme;
+  }
+
+  try {
+    return normalizeCustomTheme(JSON.parse(savedTheme));
+  } catch {
+    return defaultCustomTheme;
+  }
 }
 
 function loadSaturation() {
@@ -971,6 +1072,7 @@ function createTaskFromDraft(draft: TaskDraft): Task {
     urgentBeforeDays: draft.urgentBeforeDays,
     sortOrder: 0,
     details: draft.details.trim(),
+    subtasks: normalizeSubtasks(draft.subtasks),
     repeat: draft.repeat,
     flagged: draft.flagged,
     flagType: draft.flagType,
@@ -1041,6 +1143,11 @@ function createNextRepeatingTask(task: Task, completedAt: string): Task | null {
     id: createId(),
     completed: false,
     completedAt: undefined,
+    subtasks: task.subtasks.map((subtask) => ({
+      ...subtask,
+      id: createId(),
+      completed: false,
+    })),
     dueDate: normalizeDueDate(formatDateInputValue(nextDueDate)),
     sortOrder: 0,
     createdAt: completedAt,
@@ -1062,6 +1169,7 @@ function toTaskRow(task: Task, userId: string): TaskRow {
     urgent_before_days: task.urgentBeforeDays,
     sort_order: task.sortOrder,
     details: task.details,
+    subtasks: task.subtasks,
     repeat: task.repeat,
     flagged: task.flagged,
     flag_type: task.flagType,
@@ -1085,6 +1193,7 @@ function fromTaskRow(row: TaskRow): Task {
     urgentBeforeDays: row.urgent_before_days,
     sortOrder: normalizeSortOrder(row.sort_order),
     details: row.details,
+    subtasks: normalizeSubtasks(row.subtasks),
     repeat: isTaskRepeat(row.repeat)
       ? row.repeat.startsWith("custom:")
         ? createCustomRepeat(getCustomRepeatDays(row.repeat))
@@ -1283,6 +1392,12 @@ export function App() {
   const [colorScheme, setColorScheme] = useState<ColorScheme>(() =>
     loadColorScheme(),
   );
+  const [customTheme, setCustomTheme] = useState<CustomTheme>(() =>
+    loadCustomTheme(),
+  );
+  const [customThemeDraft, setCustomThemeDraft] = useState<CustomTheme>(() =>
+    loadCustomTheme(),
+  );
   const [saturation, setSaturation] = useState(() => loadSaturation());
   const [sortMode, setSortMode] = useState<SortMode>(() => loadSortMode());
   const [sortDirection, setSortDirection] = useState<SortDirection>(() =>
@@ -1349,6 +1464,54 @@ export function App() {
     document.documentElement.dataset.scheme = colorScheme;
     window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, colorScheme);
   }, [colorScheme]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (colorScheme !== "custom") {
+      [
+        "--bg",
+        "--surface",
+        "--surface-strong",
+        "--surface-top",
+        "--task-normal",
+        "--task-text",
+        "--primary",
+        "--primary-text",
+        "--magenta",
+        "--magenta-text",
+        "--border",
+        "--border-strong",
+      ].forEach((property) => root.style.removeProperty(property));
+      return;
+    }
+
+    const taskText = getReadableTextColor(customTheme.primary);
+    const actionText = getReadableTextColor(customTheme.secondary);
+    const pageText = getReadableTextColor(customTheme.tertiary);
+
+    root.style.setProperty("--bg", customTheme.tertiary);
+    root.style.setProperty("--surface", customTheme.tertiary);
+    root.style.setProperty(
+      "--surface-strong",
+      `color-mix(in srgb, ${customTheme.tertiary} 82%, ${pageText})`,
+    );
+    root.style.setProperty("--surface-top", customTheme.secondary);
+    root.style.setProperty("--task-normal", customTheme.primary);
+    root.style.setProperty("--task-text", taskText);
+    root.style.setProperty("--primary", customTheme.primary);
+    root.style.setProperty("--primary-text", taskText);
+    root.style.setProperty("--magenta", customTheme.secondary);
+    root.style.setProperty("--magenta-text", actionText);
+    root.style.setProperty(
+      "--border",
+      `color-mix(in srgb, ${pageText} 24%, ${customTheme.tertiary})`,
+    );
+    root.style.setProperty(
+      "--border-strong",
+      `color-mix(in srgb, ${pageText} 44%, ${customTheme.tertiary})`,
+    );
+  }, [colorScheme, customTheme]);
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -1548,6 +1711,19 @@ export function App() {
         .upsert(taskRows, { onConflict: "id" });
 
       if (upsertError) {
+        if (upsertError.message.toLowerCase().includes("subtasks")) {
+          const fallbackRows = taskRows.map(({ subtasks: _subtasks, ...row }) => row);
+          const { error: fallbackError } = await supabase
+            .from("tasks")
+            .upsert(fallbackRows, { onConflict: "id" });
+
+          if (!fallbackError) {
+            window.localStorage.setItem(SYNCED_USER_STORAGE_KEY, currentUser.id);
+            setSyncMessage("Synced without subtasks. Run subtask SQL.");
+            return true;
+          }
+        }
+
         setSyncMessage(`Sync error: ${upsertError.message}`);
         return false;
       }
@@ -1807,6 +1983,7 @@ export function App() {
       durationMinutes: task.durationMinutes,
       urgentBeforeDays: task.urgentBeforeDays,
       details: task.details,
+      subtasks: task.subtasks,
       repeat: task.repeat,
       flagged: task.flagged,
       flagType: task.flagType,
@@ -1841,6 +2018,7 @@ export function App() {
               durationMinutes: normalizeDurationMinutes(editingDraft.durationMinutes),
               urgentBeforeDays: editingDraft.urgentBeforeDays,
               details: editingDraft.details.trim(),
+              subtasks: normalizeSubtasks(editingDraft.subtasks),
               repeat: editingDraft.repeat,
               flagged: editingDraft.flagged,
               flagType: editingDraft.flagType,
@@ -2120,6 +2298,61 @@ export function App() {
     });
   }
 
+  function updateEditingSubtaskTitle(subtaskId: string, title: string) {
+    setEditingDraft((currentDraft) => ({
+      ...currentDraft,
+      subtasks: currentDraft.subtasks.map((subtask) =>
+        subtask.id === subtaskId ? { ...subtask, title } : subtask,
+      ),
+    }));
+  }
+
+  function toggleEditingSubtask(subtaskId: string) {
+    setEditingDraft((currentDraft) => ({
+      ...currentDraft,
+      subtasks: currentDraft.subtasks.map((subtask) =>
+        subtask.id === subtaskId
+          ? { ...subtask, completed: !subtask.completed }
+          : subtask,
+      ),
+    }));
+  }
+
+  function addEditingSubtask() {
+    setEditingDraft((currentDraft) => ({
+      ...currentDraft,
+      subtasks: [
+        ...currentDraft.subtasks,
+        { id: createId(), title: "", completed: false },
+      ],
+    }));
+  }
+
+  function deleteEditingSubtask(subtaskId: string) {
+    setEditingDraft((currentDraft) => ({
+      ...currentDraft,
+      subtasks: currentDraft.subtasks.filter((subtask) => subtask.id !== subtaskId),
+    }));
+  }
+
+  function toggleTaskSubtask(taskId: string, subtaskId: string) {
+    persistTasks(
+      tasks.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              subtasks: task.subtasks.map((subtask) =>
+                subtask.id === subtaskId
+                  ? { ...subtask, completed: !subtask.completed }
+                  : subtask,
+              ),
+              updatedAt: new Date().toISOString(),
+            }
+          : task,
+      ),
+    );
+  }
+
   function exportBackup() {
     const backup = {
       version: BACKUP_VERSION,
@@ -2159,6 +2392,7 @@ export function App() {
       markerStyle: task.flagType,
       manualSortBias: task.sortOrder,
       details: task.details || null,
+      subtasks: task.subtasks,
       createdAt: task.createdAt,
       updatedAt: task.updatedAt,
       completedAt: task.completedAt || null,
@@ -2363,6 +2597,7 @@ export function App() {
         task.repeat !== "none" ||
         task.dueEndTime ||
         task.durationMinutes ||
+        task.subtasks.length ||
         task.completedAt,
     );
 
@@ -2640,6 +2875,45 @@ export function App() {
               />
             </label>
 
+            <div className="full-field subtask-editor">
+              <div className="subtask-editor-header">
+                <span>Subtasks</span>
+                <button type="button" onClick={addEditingSubtask}>
+                  Add subtask
+                </button>
+              </div>
+              {editingDraft.subtasks.length ? (
+                <div className="subtask-edit-list">
+                  {editingDraft.subtasks.map((subtask) => (
+                    <div className="subtask-edit-row" key={subtask.id}>
+                      <input
+                        type="checkbox"
+                        checked={subtask.completed}
+                        aria-label="Subtask complete"
+                        onChange={() => toggleEditingSubtask(subtask.id)}
+                      />
+                      <input
+                        value={subtask.title}
+                        onChange={(event) =>
+                          updateEditingSubtaskTitle(subtask.id, event.target.value)
+                        }
+                        placeholder="Subtask"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Delete subtask"
+                        onClick={() => deleteEditingSubtask(subtask.id)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="field-help">Break a big task into smaller steps.</p>
+              )}
+            </div>
+
             <div className="task-actions edit-actions">
               <button type="submit">Save</button>
               <button type="button" onClick={cancelEditing}>
@@ -2703,33 +2977,95 @@ export function App() {
               {isExpanded ? (
                 <div className="task-details">
                   {task.details ? (
-                    <p>{task.details}</p>
+                    <section className="detail-card detail-notes">
+                      <h3>Notes</h3>
+                      <p>{task.details}</p>
+                    </section>
                   ) : !hasInfoDetails ? (
                     <p className="muted">No extra details yet.</p>
                   ) : null}
-                  {task.dueDate ? (
-                    <p className="muted">
-                      Becomes urgent {task.urgentBeforeDays} day
-                      {task.urgentBeforeDays === 1 ? "" : "s"} before due date.
-                    </p>
+                  {task.subtasks.length ? (
+                    <section className="detail-card">
+                      <h3>Subtasks</h3>
+                      <div className="subtask-list">
+                        {task.subtasks.map((subtask) => (
+                          <label
+                            className={subtask.completed ? "subtask-row completed" : "subtask-row"}
+                            key={subtask.id}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={subtask.completed}
+                              onChange={() => toggleTaskSubtask(task.id, subtask.id)}
+                            />
+                            <span>{subtask.title}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </section>
                   ) : null}
-                  {task.dueTime ? (
-                    <p className="muted">Start time {formatTime(task.dueTime)}</p>
-                  ) : null}
-                  {task.estimatedDuration ? (
-                    <p className="muted">Effort size: {task.estimatedDuration}</p>
-                  ) : null}
-                  {task.repeat !== "none" ? (
-                    <p className="muted">Repeat: {formatRepeat(task.repeat)}</p>
-                  ) : null}
-                  {task.dueEndTime ? (
-                    <p className="muted">End time {formatTime(task.dueEndTime)}</p>
-                  ) : null}
-                  {task.durationMinutes ? (
-                    <p className="muted">Duration {formatDuration(task.durationMinutes)}</p>
-                  ) : null}
-                  {task.completedAt ? (
-                    <p className="muted">Completed {formatDate(task.completedAt)}</p>
+                  {task.dueDate ||
+                  task.dueTime ||
+                  task.dueEndTime ||
+                  task.durationMinutes ||
+                  task.estimatedDuration ||
+                  task.repeat !== "none" ||
+                  task.completedAt ? (
+                    <section className="detail-card detail-grid">
+                      <h3>Info</h3>
+                      {task.dueDate ? (
+                        <p>
+                          <span>Due</span>
+                          <strong>{formatDate(task.dueDate)}</strong>
+                        </p>
+                      ) : null}
+                      {task.dueDate ? (
+                        <p>
+                          <span>Urgent before</span>
+                          <strong>
+                            {task.urgentBeforeDays} day
+                            {task.urgentBeforeDays === 1 ? "" : "s"} before due
+                          </strong>
+                        </p>
+                      ) : null}
+                      {task.dueTime ? (
+                        <p>
+                          <span>Start time</span>
+                          <strong>{formatTime(task.dueTime)}</strong>
+                        </p>
+                      ) : null}
+                      {task.dueEndTime ? (
+                        <p>
+                          <span>End time</span>
+                          <strong>{formatTime(task.dueEndTime)}</strong>
+                        </p>
+                      ) : null}
+                      {task.durationMinutes ? (
+                        <p>
+                          <span>Actual duration</span>
+                          <strong>{formatDuration(task.durationMinutes)}</strong>
+                        </p>
+                      ) : null}
+                      {task.estimatedDuration ? (
+                        <p>
+                          <span>Effort size</span>
+                          <strong>{task.estimatedDuration}</strong>
+                        </p>
+                      ) : null}
+                      {task.repeat !== "none" ? (
+                        <p>
+                          <span>Repeat</span>
+                          <strong>{formatRepeat(task.repeat)}</strong>
+                        </p>
+                      ) : null}
+                      {task.completedAt ? (
+                        <p>
+                          <span>Completed</span>
+                          <strong>{formatDate(task.completedAt)}</strong>
+                        </p>
+                      ) : null}
+                    </section>
                   ) : null}
                 </div>
               ) : null}
@@ -3057,6 +3393,9 @@ export function App() {
                           ? event.target.value
                           : "cmyk";
 
+                        if (nextScheme === "custom") {
+                          setCustomThemeDraft(customTheme);
+                        }
                         setColorScheme(nextScheme);
                       }}
                     >
@@ -3085,6 +3424,79 @@ export function App() {
                     <span className="preview-swatch task-preview" />
                     <span className="preview-swatch action-preview" />
                   </div>
+                  {colorScheme === "custom" ? (
+                    <div className="custom-theme-panel">
+                      <label>
+                        <span>Primary tile</span>
+                        <input
+                          type="color"
+                          value={customThemeDraft.primary}
+                          onChange={(event) =>
+                            setCustomThemeDraft({
+                              ...customThemeDraft,
+                              primary: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span>Secondary action</span>
+                        <input
+                          type="color"
+                          value={customThemeDraft.secondary}
+                          onChange={(event) =>
+                            setCustomThemeDraft({
+                              ...customThemeDraft,
+                              secondary: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span>Background</span>
+                        <input
+                          type="color"
+                          value={customThemeDraft.tertiary}
+                          onChange={(event) =>
+                            setCustomThemeDraft({
+                              ...customThemeDraft,
+                              tertiary: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                      <div className="theme-preview custom-preview" aria-hidden="true">
+                        <span
+                          className="preview-swatch"
+                          style={{ background: customThemeDraft.primary }}
+                        />
+                        <span
+                          className="preview-swatch"
+                          style={{ background: customThemeDraft.secondary }}
+                        />
+                        <span
+                          className="preview-swatch"
+                          style={{ background: customThemeDraft.tertiary }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextTheme = normalizeCustomTheme(customThemeDraft);
+
+                          setCustomTheme(nextTheme);
+                          setCustomThemeDraft(nextTheme);
+                          setColorScheme("custom");
+                          window.localStorage.setItem(
+                            CUSTOM_THEME_STORAGE_KEY,
+                            JSON.stringify(nextTheme),
+                          );
+                        }}
+                      >
+                        Save theme
+                      </button>
+                    </div>
+                  ) : null}
                 </section>
 
                 <section className="menu-section" aria-labelledby="account">

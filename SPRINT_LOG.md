@@ -914,3 +914,28 @@
 
 - Ran `npm run build`.
 - Build completed successfully.
+
+### Sprint 34 Approval
+
+- CEO requested subtasks and a better task info display.
+- CEO requested tighter radius/edge alignment on the `What should I do?` pill.
+- CEO requested the sort pill look better.
+- CEO requested a custom colour picker theme with primary, secondary, and tertiary/background colours plus a save action.
+
+### Sprint 34 Implementation Changes
+
+- Added a `subtasks` field to tasks with safe loading for old tasks.
+- Added subtask editing inside the edit window only.
+- Added subtask checkboxes to the expanded details view.
+- Improved expanded details into separate Notes, Subtasks, and Info cards.
+- Added custom theme settings for primary tile, secondary action, and background colours.
+- Added a `Save theme` button and localStorage persistence for the custom theme.
+- Polished the `What should I do?` pill and sort controls.
+- Updated `SUPABASE_SCHEMA.sql` for synced subtasks and custom repeat values.
+- Added a sync fallback so tasks can still sync before the subtask SQL is run, with subtasks remaining local until setup is complete.
+- Bumped visible app version to `2.7` and package version to `2.7.0`.
+
+### Sprint 34 Verification
+
+- Ran `npm run build`.
+- Build completed successfully.

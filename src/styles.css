@@ -520,13 +520,16 @@ h3 {
 
 .next-task-button {
   min-height: 34px;
+  border: 1px solid color-mix(in srgb, var(--magenta) 48%, var(--border-strong));
   border-radius: 999px;
-  padding: 0.35rem 0.62rem;
+  padding: 0.35rem 0.78rem;
   background: color-mix(in srgb, var(--magenta) var(--app-saturation), #8d8d8d);
   color: var(--magenta-text);
   font-size: 0.78rem;
   font-weight: 850;
+  line-height: 1;
   white-space: nowrap;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 18%, transparent);
 }
 
 .task-suggestion-popover {
@@ -592,11 +595,12 @@ h3 {
   display: inline-flex;
   align-items: center;
   min-height: 34px;
-  border: 1px solid color-mix(in srgb, var(--border-strong) 58%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-strong) 70%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 58%, transparent);
-  padding: 0 0.38rem;
+  background: color-mix(in srgb, var(--surface) 84%, var(--bg));
+  padding: 0 0.5rem;
   color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 10%, transparent);
 }
 
 .sort-pill span {
@@ -608,7 +612,7 @@ h3 {
 
 .sort-pill select {
   min-height: 28px;
-  width: 4.85rem;
+  width: 4.95rem;
   border: 0;
   background: transparent;
   padding: 0;
@@ -621,7 +625,8 @@ h3 {
   justify-content: center;
   min-width: 34px;
   padding: 0;
-  color: var(--text);
+  background: var(--chip-bg);
+  color: #ffffff;
   font-size: 1rem;
   font-weight: 950;
 }
@@ -1351,18 +1356,113 @@ h3 {
 
 .task-details {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.55rem;
   margin-top: 0.75rem;
-  border-left: 3px solid var(--border-strong);
   border-radius: 10px;
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   color: var(--text);
-  padding: 0.75rem;
-  white-space: pre-wrap;
+  padding: 0.55rem;
 }
 
 .task-details .muted {
   color: color-mix(in srgb, var(--text) 78%, transparent);
+}
+
+.detail-card {
+  display: grid;
+  gap: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 52%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  padding: 0.55rem;
+}
+
+.detail-card h3 {
+  margin: 0;
+  color: var(--label);
+  font-size: 0.78rem;
+}
+
+.detail-notes p {
+  white-space: pre-wrap;
+}
+
+.detail-grid p {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  color: color-mix(in srgb, var(--text) 84%, transparent);
+  font-size: 0.8rem;
+}
+
+.detail-grid span {
+  color: var(--muted);
+}
+
+.detail-grid strong {
+  color: var(--text);
+  text-align: right;
+}
+
+.subtask-list,
+.subtask-edit-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.subtask-row,
+.subtask-edit-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.subtask-row {
+  min-height: 1.8rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-strong) 70%, transparent);
+  padding: 0.25rem 0.4rem;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.subtask-row.completed span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.subtask-row input,
+.subtask-edit-row input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--good);
+}
+
+.subtask-editor {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.subtask-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-weight: 700;
+}
+
+.subtask-editor-header button,
+.subtask-edit-row button {
+  min-height: 32px;
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
+}
+
+.subtask-edit-row input[type="text"],
+.subtask-edit-row input:not([type]) {
+  min-width: 0;
 }
 
 .task-actions {
@@ -1614,6 +1714,37 @@ h3 {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+.custom-theme-panel {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  padding: 0.75rem;
+}
+
+.custom-theme-panel label {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.custom-theme-panel input[type="color"] {
+  width: 3.2rem;
+  min-height: 2.1rem;
+  padding: 0.15rem;
+}
+
+.custom-theme-panel button {
+  justify-self: start;
+  min-height: 36px;
+  background: color-mix(in srgb, var(--magenta) var(--app-saturation), #8d8d8d);
+  color: var(--magenta-text);
+}
+
+.custom-preview {
+  align-items: stretch;
 }
 
 .preview-swatch {
